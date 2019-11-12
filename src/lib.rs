@@ -17,7 +17,7 @@ type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allo
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum Error {
-	NotAnArray,
+	WrongObjectType, // TODO: add actual and expected object type.
 	WrongDataType, // TODO: add actual and expected data type.
 	WrongDimension, // TODO: add actual and expected dimensions.
 }
@@ -65,7 +65,7 @@ where
 {
 	unsafe {
 		if npyffi::array::PyArray_Check(input.as_ptr()) != 1 {
-			return Err(Error::NotAnArray);
+			return Err(Error::WrongObjectType);
 		}
 
 		let input = &mut *(input.as_ptr() as *mut npyffi::objects::PyArrayObject);

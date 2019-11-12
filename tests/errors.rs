@@ -45,8 +45,8 @@ fn wrong_shape() {
 	let get_global = |name| context.globals(py).get_item(name).unwrap();
 
 	assert_match!(Ok(x) = matrix_from_python::<f64, U2, U3>(get_global("matrix")));
-	assert_match!(Err(Error::WrongDimension) = matrix_from_python::<f64, U1, U1>(get_global("matrix")));
-	assert_match!(Err(Error::WrongDimension) = matrix_from_python::<f64, U3, U2>(get_global("matrix")));
+	assert_match!(Err(Error::WrongShape) = matrix_from_python::<f64, U1, U1>(get_global("matrix")));
+	assert_match!(Err(Error::WrongShape) = matrix_from_python::<f64, U3, U2>(get_global("matrix")));
 }
 
 #[test]

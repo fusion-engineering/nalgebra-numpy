@@ -19,7 +19,7 @@ type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allo
 pub enum Error {
 	WrongObjectType, // TODO: add actual and expected object type.
 	WrongDataType, // TODO: add actual and expected data type.
-	WrongDimension, // TODO: add actual and expected dimensions.
+	WrongShape, // TODO: add actual and expected shape.
 }
 
 // pub fn dynamic_matrix_from_python<N>(input: &pyo3::types::PyAny) -> Result<DMatrix<N>, Error>
@@ -40,13 +40,13 @@ pub enum Error {
 
 // 	if let Some(rows) = R::try_to_usize() {
 // 		if rows != input.shape()[0] {
-// 			return Err(Error::WrongDimension);
+// 			return Err(Error::WrongShape);
 // 		}
 // 	}
 
 // 	if let Some(cols) = C::try_to_usize() {
 // 		if cols != input.shape()[1] {
-// 			return Err(Error::WrongDimension);
+// 			return Err(Error::WrongShape);
 // 		}
 // 	}
 
@@ -75,7 +75,7 @@ where
 		}
 
 		if input.nd != 2 {
-			return Err(Error::WrongDimension);
+			return Err(Error::WrongShape);
 		}
 
 		let input_rows = input.dimensions.add(0).read_volatile() as usize;
@@ -87,7 +87,7 @@ where
 		let cols = C::try_to_usize().unwrap();
 
 		if input_rows != rows || input_cols != cols {
-			return Err(Error::WrongDimension);
+			return Err(Error::WrongShape);
 		}
 
 		let mut output = Matrix::<N, R, C, _>::new_uninitialized();

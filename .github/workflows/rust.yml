@@ -1,0 +1,23 @@
+name: Rust
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        channel: [nightly]
+    steps:
+    - name: Install Rust
+      run: rustup install ${{matrix.channel}}
+    - uses: actions/checkout@v1
+    - name: Build
+      run: cargo +${{matrix.channel}} build --color=always --all-targets
+    - name: Install Python packages
+      run: |
+        pip3 install -U numpy
+    - name: Run tests
+      run: cargo +${{matrix.channel}} test --color=always
+

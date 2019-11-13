@@ -1,3 +1,18 @@
+/// Assert that an expression matches a pattern.
+///
+/// This can be useful to test that a particular enum variant is returned,
+/// even if the enum does not implement Eq.
+/// It is also useful when you want to test which variant is returned,
+/// but you do not care about the contents.
+///
+/// If the expression does not match the pattern,
+/// both the expression and the value it evaluates to are printed.
+/// The type of the value must implement [`Debug`].
+///
+/// ```
+/// assert_match!(Err(_) = std::fs::read("/non/existing/path"));
+/// assert_match!(Ok(_) = std::fs::read("/dev/null"));
+/// ```
 macro_rules! assert_match {
 	( $pat:pat = $expr:expr) => {{
 		let value = $expr;

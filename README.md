@@ -51,7 +51,6 @@ Dynamic matrices are also supported:
 ```rust
 use nalgebra::DMatrix;
 #
-#
 
 // <snip>
 
@@ -67,8 +66,6 @@ And so are partially dynamic matrices:
 
 ```rust
 use nalgebra::{MatrixMN, Dynamic, U3};
-#
-#
 
 // <snip>
 

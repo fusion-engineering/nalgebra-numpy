@@ -54,7 +54,6 @@
 //! # use inline_python::{Context, python};
 //! # use nalgebra_numpy::{matrix_from_python};
 //! use nalgebra::DMatrix;
-//! #
 //! # fn main() -> Result<(), nalgebra_numpy::Error> {
 //! # let gil = pyo3::Python::acquire_gil();
 //! # let context = Context::new_with_gil(gil.python()).unwrap();
@@ -89,7 +88,6 @@
 //! # use inline_python::{Context, python};
 //! # use nalgebra_numpy::{matrix_from_python};
 //! use nalgebra::{MatrixMN, Dynamic, U3};
-//! #
 //! # fn main() -> Result<(), nalgebra_numpy::Error> {
 //! # let gil = pyo3::Python::acquire_gil();
 //! # let context = Context::new_with_gil(gil.python()).unwrap();
@@ -102,7 +100,6 @@
 //! #         [7.0, 8.0, 9.0],
 //! #     ])
 //! # }
-//! #
 //! # let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 //!
 //! // <snip>

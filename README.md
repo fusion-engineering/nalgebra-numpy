@@ -1,6 +1,6 @@
 # nalgebra-numpy
 
-This crate provides conversion between [`nalgebra`] and [`numpy`](https://numpy.org/).
+This crate provides conversion between [`nalgebra`](https://docs.rs/nalgebra/) and [`numpy`](https://numpy.org/).
 
 Currently, only the conversion from numpy to nalgebra is implemented,
 but the other direction will be added soon.
@@ -8,8 +8,9 @@ but the other direction will be added soon.
 ## Conversion from numpy to nalgebra.
 
 It is possible to create either a view or a copy of a numpy array.
-You can use [`matrix_from_python`] to copy the data into a new matrix,
-or one of [`matrix_slice_from_python`] or [`matrix_slice_mut_from_python`] to create a view.
+You can use [`matrix_from_python`](https://docs.rs/nalgebra-numpy/latest/nalgebra-numpy/fn.matrix_from_python.html) to copy the data into a new matrix,
+or one of [`matrix_slice_from_python`](https://docs.rs/nalgebra-numpy/latest/nalgebra-numpy/fn.matrix_slice_from_python.html)
+or [`matrix_slice_mut_from_python`](https://docs.rs/nalgebra-numpy/latest/nalgebra-numpy/fn.matrix_slice_mut_from_python.html) to create a view.
 
 Keep in mind though that the borrow checker can not enforce rules on data managed by a Python object.
 You could potentially keep an immutable view around in Rust, and then modify the data from Python.

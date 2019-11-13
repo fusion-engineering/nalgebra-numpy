@@ -1,7 +1,7 @@
 [package]
 name = "nalgebra-numpy"
 description = "conversions between nalgebra and numpy"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Maarten de Vries <maarten@de-vri.es>"]
 edition = "2018"
 license = "BSD-2-Clause"

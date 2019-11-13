@@ -33,6 +33,9 @@ pub enum Error {
 
 	/// The input array is not compatible with the requested nalgebra matrix.
 	IncompatibleArray(IncompatibleArrayError),
+
+	/// The input array is not properly aligned.
+	UnalignedArray(UnalignedArrayError),
 }
 
 /// Error indicating that the Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
@@ -49,6 +52,10 @@ pub struct IncompatibleArrayError {
 	pub expected_dtype: numpy::NpyDataType,
 	pub actual_dtype: String,
 }
+
+/// Error indicating that the input array is not properly aligned.
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct UnalignedArrayError;
 
 /// Create a [`nalgebra::MatrixSlice`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 ///
@@ -114,6 +121,7 @@ where
 {
 	let array = cast_to_py_array(array)?;
 	let shape = check_array_compatible::<N, R, C>(array)?;
+	check_array_alignment(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
 	let col_stride = Dynamic::new(*(*array).strides.add(1) as usize / std::mem::size_of::<N>());
@@ -133,6 +141,7 @@ where
 {
 	let array = cast_to_py_array(array)?;
 	let shape = check_array_compatible::<N, R, C>(array)?;
+	check_array_alignment(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
 	let col_stride = Dynamic::new(*(*array).strides.add(1) as usize / std::mem::size_of::<N>());
@@ -203,6 +212,14 @@ where
 	))
 }
 
+unsafe fn check_array_alignment(array: *mut PyArrayObject) -> Result<(), UnalignedArrayError> {
+	if (*array).flags & npyffi::flags::NPY_ARRAY_ALIGNED != 0 {
+		Ok(())
+	} else {
+		Err(UnalignedArrayError)
+	}
+}
+
 /// Get a string representing the type of a Python object.
 unsafe fn object_type_string(object: *mut pyo3::ffi::PyObject) -> String {
 	let py_type = (*object).ob_type;
@@ -252,6 +269,12 @@ impl From<IncompatibleArrayError> for Error {
 	}
 }
 
+impl From<UnalignedArrayError> for Error {
+	fn from(other: UnalignedArrayError) -> Self {
+		Self::UnalignedArray(other)
+	}
+}
+
 impl std::fmt::Display for Dimension {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
@@ -273,6 +296,7 @@ impl std::fmt::Display for Error {
 		match self {
 			Self::WrongObjectType(e) => write!(f, "{}", e),
 			Self::IncompatibleArray(e) => write!(f, "{}", e),
+			Self::UnalignedArray(e) => write!(f, "{}", e),
 		}
 	}
 }
@@ -296,7 +320,13 @@ impl std::fmt::Display for IncompatibleArrayError {
 	}
 }
 
-/// Helper to format [`numpu::NpyDataType`] more consistently.
+impl std::fmt::Display for UnalignedArrayError {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		write!(f, "the input array is not properly aligned for this platform")
+	}
+}
+
+/// Helper to format [`numpy::NpyDataType`] more consistently.
 struct FormatDataType<'a>(&'a numpy::NpyDataType);
 
 impl std::fmt::Display for FormatDataType<'_> {

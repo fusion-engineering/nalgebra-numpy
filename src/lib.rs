@@ -20,6 +20,9 @@ pub enum Dimension {
 	Dynamic,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+pub struct Shape(Dimension, Dimension);
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum Error {
 	WrongObjectType(WrongObjectTypeError),
@@ -35,7 +38,7 @@ pub struct WrongObjectTypeError {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct WrongShapeError {
-	pub expected: [Dimension; 2],
+	pub expected: Shape,
 	pub actual: Vec<usize>
 }
 
@@ -107,8 +110,7 @@ where
 	C: nalgebra::Dim,
 {
 	let array = cast_to_py_array(array)?;
-	let [input_rows, input_cols] = check_shape::<R, C>(array)?;
-	let shape = (R::from_usize(input_rows), C::from_usize(input_cols));
+	let shape = check_shape::<R, C>(array)?;
 	check_equiv_dtype::<N>(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
@@ -127,8 +129,7 @@ where
 	C: nalgebra::Dim,
 {
 	let array = cast_to_py_array(array)?;
-	let [input_rows, input_cols] = check_shape::<R, C>(array)?;
-	let shape = (R::from_usize(input_rows), C::from_usize(input_cols));
+	let shape = check_shape::<R, C>(array)?;
 	check_equiv_dtype::<N>(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
@@ -149,17 +150,17 @@ unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyAr
 	}
 }
 
-unsafe fn check_shape<R, C>(array: *mut PyArrayObject) -> Result<[usize; 2], WrongShapeError>
+unsafe fn check_shape<R, C>(array: *mut PyArrayObject) -> Result<(R, C), WrongShapeError>
 where
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	let expected = [
+	let expected = Shape(
 		R::try_to_usize().map(Dimension::Static).unwrap_or(Dimension::Dynamic),
 		C::try_to_usize().map(Dimension::Static).unwrap_or(Dimension::Dynamic),
-	];
+	);
 
-	if (*array).nd as usize != expected.len() {
+	if (*array).nd != 2 {
 		return Err(WrongShapeError {
 			expected,
 			actual: shape(array),
@@ -169,20 +170,20 @@ where
 	let input_rows = *(*array).dimensions.add(0) as usize;
 	let input_cols = *(*array).dimensions.add(1) as usize;
 
-	let rows_ok = if let Dimension::Static(expected_rows) = expected[0] {
+	let rows_ok = if let Dimension::Static(expected_rows) = expected.0 {
 		input_rows == expected_rows
 	} else {
 		true
 	};
 
-	let cols_ok = if let Dimension::Static(expected_cols) = expected[1] {
+	let cols_ok = if let Dimension::Static(expected_cols) = expected.1 {
 		input_cols == expected_cols
 	} else {
 		true
 	};
 
 	if rows_ok && cols_ok {
-		Ok([input_rows, input_cols])
+		Ok((R::from_usize(input_rows), C::from_usize(input_cols)))
 	} else {
 		Err(WrongShapeError {
 			expected,
@@ -254,6 +255,22 @@ impl From<WrongDataTypeError> for Error {
 	}
 }
 
+impl std::fmt::Display for Dimension {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		match self {
+			Self::Dynamic => write!(f, "Dynamic"),
+			Self::Static(x) => write!(f, "{}", x),
+		}
+	}
+}
+
+impl std::fmt::Display for Shape {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		let Self(rows, cols) = self;
+		write!(f, "[{}, {}]", rows, cols)
+	}
+}
+
 impl std::fmt::Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
@@ -272,7 +289,7 @@ impl std::fmt::Display for WrongObjectTypeError {
 
 impl std::fmt::Display for WrongShapeError {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "wrong array shape: expected {:?}, found {:?}", self.expected, self.actual)
+		write!(f, "wrong array shape: expected {}, found {:?}", self.expected, self.actual)
 	}
 }
 

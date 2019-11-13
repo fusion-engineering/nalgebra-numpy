@@ -27,6 +27,21 @@ macro_rules! assert_match {
 	}}
 }
 
+macro_rules! assert_ok {
+	( $expr:expr ) => {{
+		let value = $expr;
+		match value {
+			Ok(x) => x,
+			Err(e) => {
+				eprintln!("failed to assert that $expr is Ok(...)");
+				eprintln!("  with $expr = {}", stringify!($expr));
+				eprintln!("  which is an Err(...): {}", e);
+				panic!("assertion failed");
+			}
+		}
+	}}
+}
+
 #[derive(Debug)]
 enum Foo {
 	Foo(i32),
@@ -49,4 +64,17 @@ fn test_assert_match_different_variant() {
 #[should_panic]
 fn test_assert_match_different_value() {
 	assert_match!(Foo::Foo(10) = Foo::Foo(11));
+}
+
+#[test]
+fn test_assert_ok() {
+	let result : Result<(), String> = Ok(());
+	assert_ok!(result);
+}
+
+#[test]
+#[should_panic]
+fn test_assert_ok_err() {
+	let result : Result<(), String> = Err(String::from("this is an error"));
+	assert_ok!(result);
 }

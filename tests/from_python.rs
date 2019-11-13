@@ -23,7 +23,7 @@ fn matrix3_f64() {
 	}
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
-	let matrix : nalgebra::Matrix3<f64> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::Matrix3<f64> = assert_ok!(matrix_from_python(matrix));
 
 	assert_eq!(matrix, nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
@@ -48,7 +48,7 @@ fn matrix3_f32() {
 	}
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
-	let matrix : nalgebra::Matrix3<f32> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::Matrix3<f32> = assert_ok!(matrix_from_python(matrix));
 
 	assert_eq!(matrix, nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
@@ -74,7 +74,7 @@ fn matrixd() {
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::DMatrix<f64> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::DMatrix<f64> = assert_ok!(matrix_from_python(matrix));
 	assert_eq!(matrix, nalgebra::DMatrix::from_row_slice(3, 3, &[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -99,7 +99,7 @@ fn matrix3d() {
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixMN<f64, Dynamic, U3> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::MatrixMN<f64, Dynamic, U3> = assert_ok!(matrix_from_python(matrix));
 	assert_eq!(matrix, nalgebra::MatrixMN::<f64, Dynamic, U3>::from_row_slice(&[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -124,7 +124,7 @@ fn matrixd3() {
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixMN<f64, U3, Dynamic> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::MatrixMN<f64, U3, Dynamic> = assert_ok!(matrix_from_python(matrix));
 	assert_eq!(matrix, nalgebra::MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -149,7 +149,7 @@ fn non_contiguous() {
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixN<f64, U2> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::MatrixN<f64, U2> = assert_ok!(matrix_from_python(matrix));
 	assert_eq!(matrix, nalgebra::MatrixN::<f64, U2>::new(
 		1.0, 2.0,
 		4.0, 5.0,
@@ -173,7 +173,7 @@ fn column_major() {
 
 	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixN<f64, U3> = matrix_from_python(matrix).unwrap();
+	let matrix : nalgebra::MatrixN<f64, U3> = assert_ok!(matrix_from_python(matrix));
 	assert_eq!(matrix, nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,

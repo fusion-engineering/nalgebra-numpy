@@ -3,6 +3,7 @@ name = "nalgebra-numpy"
 version = "0.1.0"
 authors = ["Maarten de Vries <maarten@de-vri.es>"]
 edition = "2018"
+license = "BSD-2-Clause"
 
 [dependencies]
 nalgebra = "0.19.0"

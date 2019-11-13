@@ -28,7 +28,7 @@ pub struct Shape(Dimension, Dimension);
 /// Error that can occur when converting from Python to a nalgebra matrix.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum Error {
-	/// The Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+	/// The Python object is not a [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
 	WrongObjectType(WrongObjectTypeError),
 
 	/// The input array is not compatible with the requested nalgebra matrix.
@@ -38,7 +38,7 @@ pub enum Error {
 	UnalignedArray(UnalignedArrayError),
 }
 
-/// Error indicating that the Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+/// Error indicating that the Python object is not a [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct WrongObjectTypeError {
 	pub actual: String,
@@ -57,11 +57,11 @@ pub struct IncompatibleArrayError {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct UnalignedArrayError;
 
-/// Create a [`nalgebra::MatrixSlice`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+/// Create a [`nalgebra::MatrixSlice`] from a Python [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
 ///
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
-/// using [`numpy.ndarray.astype`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.astype.html).
+/// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
 ///
 /// # Safety
 /// This function creates a const slice that references data owned by Python.
@@ -75,11 +75,11 @@ where
 	matrix_slice_from_python_ptr(input.as_ptr())
 }
 
-/// Create a [`nalgebra::MatrixSliceMut`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+/// Create a [`nalgebra::MatrixSliceMut`] from a Python [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
 ///
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
-/// using [`numpy.ndarray.astype`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.astype.html).
+/// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
 ///
 /// # Safety
 /// This function creates a mutable slice that references data owned by Python.
@@ -93,13 +93,13 @@ where
 	matrix_slice_mut_from_python_ptr(input.as_ptr())
 }
 
-/// Create a [`nalgebra::Matrix`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+/// Create a [`nalgebra::Matrix`] from a Python [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
 ///
 /// The data is copied into the matrix.
 ///
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
-/// using [`numpy.ndarray.astype`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.astype.html).
+/// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
 pub fn matrix_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::Matrix<N, R, C, Buffer<N, R, C>>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,

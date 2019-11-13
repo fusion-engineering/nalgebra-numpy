@@ -31,31 +31,23 @@ pub enum Error {
 	/// The Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 	WrongObjectType(WrongObjectTypeError),
 
-	/// The input array has the wrong shape.
-	WrongShape(WrongShapeError),
-
-	/// The input array has the wrong data type.
-	WrongDataType(WrongDataTypeError),
+	/// The input array is not compatible with the requested nalgebra matrix.
+	IncompatibleArray(IncompatibleArrayError),
 }
 
-/// Error indicating the Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+/// Error indicating that the Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct WrongObjectTypeError {
 	pub actual: String,
 }
 
-/// Error indicating that the input array has the wrong shape.
+/// Error indicating that the input array is not compatible with the requested nalgebra matrix.
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct WrongShapeError {
-	pub expected: Shape,
-	pub actual: Vec<usize>
-}
-
-/// Error indicating that the input array has the wrong data type.
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct WrongDataTypeError {
-	pub expected: numpy::NpyDataType,
-	pub actual: String,
+pub struct IncompatibleArrayError {
+	pub expected_shape: Shape,
+	pub actual_shape: Vec<usize>,
+	pub expected_dtype: numpy::NpyDataType,
+	pub actual_dtype: String,
 }
 
 /// Create a [`nalgebra::MatrixSlice`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
@@ -121,8 +113,7 @@ where
 	C: nalgebra::Dim,
 {
 	let array = cast_to_py_array(array)?;
-	let shape = check_shape::<R, C>(array)?;
-	check_equiv_dtype::<N>(array)?;
+	let shape = check_array_compatible::<N, R, C>(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
 	let col_stride = Dynamic::new(*(*array).strides.add(1) as usize / std::mem::size_of::<N>());
@@ -141,8 +132,7 @@ where
 	C: nalgebra::Dim,
 {
 	let array = cast_to_py_array(array)?;
-	let shape = check_shape::<R, C>(array)?;
-	check_equiv_dtype::<N>(array)?;
+	let shape = check_array_compatible::<N, R, C>(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
 	let col_stride = Dynamic::new(*(*array).strides.add(1) as usize / std::mem::size_of::<N>());
@@ -162,59 +152,55 @@ unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyAr
 	}
 }
 
-/// Check if a numpy array has a compatible shape.
-unsafe fn check_shape<R, C>(array: *mut PyArrayObject) -> Result<(R, C), WrongShapeError>
+/// Check if a numpy array is compatible and return the runtime shape.
+unsafe fn check_array_compatible<N, R, C>(array: *mut PyArrayObject) -> Result<(R, C), IncompatibleArrayError>
 where
+	N: numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	let expected = Shape(
-		R::try_to_usize().map(Dimension::Static).unwrap_or(Dimension::Dynamic),
-		C::try_to_usize().map(Dimension::Static).unwrap_or(Dimension::Dynamic),
-	);
+	// Delay semi-expensive construction of error object using a lambda.
+	let make_error = || {
+		let expected_shape = Shape(
+			R::try_to_usize().map(Dimension::Static).unwrap_or(Dimension::Dynamic),
+			C::try_to_usize().map(Dimension::Static).unwrap_or(Dimension::Dynamic),
+		);
+		IncompatibleArrayError {
+			expected_shape,
+			actual_shape: shape(array),
+			expected_dtype: N::npy_data_type(),
+			actual_dtype: data_type_string(array),
+		}
+	};
 
+	// Input array must have two dimensions.
 	if (*array).nd != 2 {
-		return Err(WrongShapeError {
-			expected,
-			actual: shape(array),
-		});
+		return Err(make_error());
 	}
 
 	let input_rows = *(*array).dimensions.add(0) as usize;
 	let input_cols = *(*array).dimensions.add(1) as usize;
 
-	let rows_ok = if let Dimension::Static(expected_rows) = expected.0 {
-		input_rows == expected_rows
-	} else {
-		true
-	};
-
-	let cols_ok = if let Dimension::Static(expected_cols) = expected.1 {
-		input_cols == expected_cols
-	} else {
-		true
-	};
-
-	if rows_ok && cols_ok {
-		Ok((R::from_usize(input_rows), C::from_usize(input_cols)))
-	} else {
-		Err(WrongShapeError {
-			expected,
-			actual: shape(array),
-		})
+	// Check number of rows in input array.
+	if R::try_to_usize().map(|expected| input_rows == expected) == Some(false) {
+		return Err(make_error());
 	}
-}
 
-/// Check if a numpy array has an data type that is equivalent to N.
-unsafe fn check_equiv_dtype<N: numpy::TypeNum>(array: *mut PyArrayObject) -> Result<(), WrongDataTypeError> {
-	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, N::typenum_default()) == 1 {
-		Ok(())
-	} else {
-		Err(WrongDataTypeError {
-			actual: data_type_string(array),
-			expected: N::npy_data_type(),
-		})
+	// Check number of columns in input array.
+	if C::try_to_usize().map(|expected| input_cols == expected) == Some(false) {
+		return Err(make_error());
 	}
+
+	// Check the data type of the input array.
+	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, N::typenum_default()) != 1 {
+		return Err(make_error());
+	}
+
+	// All good.
+	Ok((
+		R::from_usize(input_rows),
+		C::from_usize(input_cols),
+	))
 }
 
 /// Get a string representing the type of a Python object.
@@ -260,15 +246,9 @@ impl From<WrongObjectTypeError> for Error {
 	}
 }
 
-impl From<WrongShapeError> for Error {
-	fn from(other: WrongShapeError) -> Self {
-		Self::WrongShape(other)
-	}
-}
-
-impl From<WrongDataTypeError> for Error {
-	fn from(other: WrongDataTypeError) -> Self {
-		Self::WrongDataType(other)
+impl From<IncompatibleArrayError> for Error {
+	fn from(other: IncompatibleArrayError) -> Self {
+		Self::IncompatibleArray(other)
 	}
 }
 
@@ -292,8 +272,7 @@ impl std::fmt::Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
 			Self::WrongObjectType(e) => write!(f, "{}", e),
-			Self::WrongShape(e)      => write!(f, "{}", e),
-			Self::WrongDataType(e)   => write!(f, "{}", e),
+			Self::IncompatibleArray(e) => write!(f, "{}", e),
 		}
 	}
 }
@@ -304,19 +283,48 @@ impl std::fmt::Display for WrongObjectTypeError {
 	}
 }
 
-impl std::fmt::Display for WrongShapeError {
+impl std::fmt::Display for IncompatibleArrayError {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "wrong array shape: expected {}, found {:?}", self.expected, self.actual)
+		write!(
+			f,
+			"incompatible array: expected ndarray(shape={}, dtype='{}'), found ndarray(shape={:?}, dtype={:?})",
+			self.expected_shape,
+			FormatDataType(&self.expected_dtype),
+			self.actual_shape,
+			self.actual_dtype,
+		)
 	}
 }
 
-impl std::fmt::Display for WrongDataTypeError {
+/// Helper to format [`numpu::NpyDataType`] more consistently.
+struct FormatDataType<'a>(&'a numpy::NpyDataType);
+
+impl std::fmt::Display for FormatDataType<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "wrong array data type: expected {:?}, found {}", self.expected, self.actual)
+		let Self(dtype) = self;
+		match dtype {
+			numpy::NpyDataType::Bool        => write!(f, "bool"),
+			numpy::NpyDataType::Complex32   => write!(f, "complex32"),
+			numpy::NpyDataType::Complex64   => write!(f, "complex64"),
+			numpy::NpyDataType::Float32     => write!(f, "float32"),
+			numpy::NpyDataType::Float64     => write!(f, "float64"),
+			numpy::NpyDataType::Int8        => write!(f, "int8"),
+			numpy::NpyDataType::Int16       => write!(f, "int16"),
+			numpy::NpyDataType::Int32       => write!(f, "int32"),
+			numpy::NpyDataType::Int64       => write!(f, "int64"),
+			numpy::NpyDataType::PyObject    => write!(f, "object"),
+			numpy::NpyDataType::Uint8       => write!(f, "uint8"),
+			numpy::NpyDataType::Uint16      => write!(f, "uint16"),
+			numpy::NpyDataType::Uint32      => write!(f, "uint32"),
+			numpy::NpyDataType::Uint64      => write!(f, "uint64"),
+			numpy::NpyDataType::Unsupported => write!(f, "unsupported"),
+		}
 	}
 }
+
+
+
 
 impl std::error::Error for Error {}
 impl std::error::Error for WrongObjectTypeError {}
-impl std::error::Error for WrongShapeError {}
-impl std::error::Error for WrongDataTypeError {}
+impl std::error::Error for IncompatibleArrayError {}

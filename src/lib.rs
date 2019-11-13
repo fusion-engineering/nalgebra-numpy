@@ -1,10 +1,8 @@
-use nalgebra::Matrix;
+use nalgebra::{Dynamic, Matrix};
+use nalgebra::base::{SliceStorage, SliceStorageMut};
 use numpy::npyffi::objects::PyArrayObject;
 use numpy::{npyffi};
 use pyo3::AsPyPointer;
-
-/// `nalgebra` buffer type for matrices created by the default allocator.
-type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allocator::Allocator<N, R, C>>::Buffer;
 
 //fn matrix_to_python<'py>(py: pyo3::Python<'py>, matrix: &MatrixD) -> &'py PyArray<f64, Dim> {
 //	// TODO: What if matrix is not contiguous?
@@ -12,6 +10,9 @@ type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allo
 //	PyArray::from_slice(py, matrix.as_slice())
 //		.reshape(matrix.shape()).unwrap()
 //}
+
+/// `nalgebra` buffer type for matrices created by the default allocator.
+type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allocator::Allocator<N, R, C>>::Buffer;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum Dimension {
@@ -44,6 +45,49 @@ pub struct WrongDataTypeError {
 	pub actual: String,
 }
 
+/// Create a [`nalgebra::MatrixSlice`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+///
+/// The array dtype must match the output type exactly.
+/// If desired, you can convert the array to the desired type in Python
+/// using [`numpy.ndarray.astype`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.astype.html).
+///
+/// # Safety
+/// This function creates a const slice that references data owned by Python.
+/// The user must ensure that the data is not modified through other pointers or references.
+pub unsafe fn matrix_slice_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
+where
+	N: nalgebra::Scalar + numpy::TypeNum,
+	R: nalgebra::Dim,
+	C: nalgebra::Dim,
+{
+	matrix_slice_from_python_ptr(input.as_ptr())
+}
+
+/// Create a [`nalgebra::MatrixSliceMut`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+///
+/// The array dtype must match the output type exactly.
+/// If desired, you can convert the array to the desired type in Python
+/// using [`numpy.ndarray.astype`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.astype.html).
+///
+/// # Safety
+/// This function creates a mutable slice that references data owned by Python.
+/// The user must ensure that no other Rust references to the same data exist.
+pub unsafe fn matrix_slice_mut_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
+where
+	N: nalgebra::Scalar + numpy::TypeNum,
+	R: nalgebra::Dim,
+	C: nalgebra::Dim,
+{
+	matrix_slice_mut_from_python_ptr(input.as_ptr())
+}
+
+/// Create a [`nalgebra::Matrix`] from a Python [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
+///
+/// The data is copied into the matrix.
+///
+/// The array dtype must match the output type exactly.
+/// If desired, you can convert the array to the desired type in Python
+/// using [`numpy.ndarray.astype`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.astype.html).
 pub fn matrix_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::Matrix<N, R, C, Buffer<N, R, C>>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -51,46 +95,47 @@ where
 	C: nalgebra::Dim,
 	nalgebra::base::default_allocator::DefaultAllocator: nalgebra::base::allocator::Allocator<N, R, C>,
 {
-	unsafe { matrix_from_py_object(input.as_ptr()) }
+	Ok(unsafe { matrix_slice_from_python::<N, R, C>(input) }?.into_owned())
 }
 
-pub unsafe fn matrix_from_py_object<N, R, C>(
+pub unsafe fn matrix_slice_from_python_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
-) -> Result<nalgebra::Matrix<N, R, C, Buffer<N, R, C>>, Error>
+) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
-	nalgebra::base::default_allocator::DefaultAllocator: nalgebra::base::allocator::Allocator<N, R, C>,
 {
 	let array = cast_to_py_array(array)?;
 	let [input_rows, input_cols] = check_shape::<R, C>(array)?;
+	let shape = (R::from_usize(input_rows), C::from_usize(input_cols));
 	check_equiv_dtype::<N>(array)?;
 
-	let mut output = Matrix::<N, R, C, _>::new_uninitialized_generic(R::from_usize(input_rows), C::from_usize(input_cols));
-	copy_data_to_matrix(&mut output, array);
-	Ok(output)
+	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
+	let col_stride = Dynamic::new(*(*array).strides.add(1) as usize / std::mem::size_of::<N>());
+	let storage = SliceStorage::<N, R, C, Dynamic, Dynamic>::from_raw_parts((*array).data as *const N, shape, (row_stride, col_stride));
+
+	Ok(Matrix::from_data(storage))
 }
 
-unsafe fn copy_data_to_matrix<N, R, C, S>(output: &mut Matrix<N, R, C, S>, array: *mut PyArrayObject)
+pub unsafe fn matrix_slice_mut_from_python_ptr<'a, N, R, C>(
+	array: *mut pyo3::ffi::PyObject
+) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
-	N: nalgebra::Scalar,
+	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
-	S: nalgebra::base::storage::StorageMut<N, R, C>,
 {
-	let row_stride = *(*array).strides.add(0) as usize;
-	let col_stride = *(*array).strides.add(1) as usize;
+	let array = cast_to_py_array(array)?;
+	let [input_rows, input_cols] = check_shape::<R, C>(array)?;
+	let shape = (R::from_usize(input_rows), C::from_usize(input_cols));
+	check_equiv_dtype::<N>(array)?;
 
-	let data = (*array).data;
+	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
+	let col_stride = Dynamic::new(*(*array).strides.add(1) as usize / std::mem::size_of::<N>());
+	let storage = SliceStorageMut::<N, R, C, Dynamic, Dynamic>::from_raw_parts((*array).data as *mut N, shape, (row_stride, col_stride));
 
-	// TODO: optimize contiguous arrays into a single memcpy.
-
-	for r in 0..output.nrows() {
-		for c in 0..output.ncols() {
-			output[(r, c)] = *(data.add(r * row_stride + c * col_stride) as *const N);
-		}
-	}
+	Ok(Matrix::from_data(storage))
 }
 
 unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyArrayObject, WrongObjectTypeError> {

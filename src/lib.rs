@@ -131,9 +131,6 @@ use pyo3::AsPyPointer;
 //		.reshape(matrix.shape()).unwrap()
 //}
 
-/// [`nalgebra`] buffer type for matrices created by the default allocator.
-type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allocator::Allocator<N, R, C>>::Buffer;
-
 /// Compile-time matrix dimension used in errors.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum Dimension {
@@ -186,6 +183,7 @@ pub struct UnalignedArrayError;
 /// # Safety
 /// This function creates a const slice that references data owned by Python.
 /// The user must ensure that the data is not modified through other pointers or references.
+#[allow(clippy::needless_lifetimes)]
 pub unsafe fn matrix_slice_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -204,6 +202,7 @@ where
 /// # Safety
 /// This function creates a mutable slice that references data owned by Python.
 /// The user must ensure that no other Rust references to the same data exist.
+#[allow(clippy::needless_lifetimes)]
 pub unsafe fn matrix_slice_mut_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -220,7 +219,7 @@ where
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
 /// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
-pub fn matrix_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::Matrix<N, R, C, Buffer<N, R, C>>, Error>
+pub fn matrix_from_python<N, R, C>(input: &pyo3::types::PyAny) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
@@ -231,6 +230,7 @@ where
 }
 
 /// Same as [`matrix_slice_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
+#[allow(clippy::missing_safety_doc)]
 pub unsafe fn matrix_slice_from_python_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
@@ -251,6 +251,7 @@ where
 }
 
 /// Same as [`matrix_slice_mut_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
+#[allow(clippy::missing_safety_doc)]
 pub unsafe fn matrix_slice_mut_from_python_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
@@ -275,7 +276,7 @@ unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyAr
 	if npyffi::array::PyArray_Check(object) == 1 {
 		Ok(&mut *(object as *mut npyffi::objects::PyArrayObject))
 	} else {
-		return Err(WrongObjectTypeError {
+		Err(WrongObjectTypeError {
 			actual: object_type_string(object),
 		})
 	}
@@ -471,9 +472,6 @@ impl std::fmt::Display for FormatDataType<'_> {
 		}
 	}
 }
-
-
-
 
 impl std::error::Error for Error {}
 impl std::error::Error for WrongObjectTypeError {}

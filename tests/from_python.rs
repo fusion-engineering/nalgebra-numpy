@@ -2,6 +2,7 @@
 
 use inline_python::{python, Context};
 use nalgebra_numpy::matrix_from_python;
+use nalgebra_numpy::matrix_slice_mut_from_python;
 use nalgebra::{Dynamic, U2, U3};
 
 #[macro_use]
@@ -179,4 +180,35 @@ fn column_major() {
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
 	));
+}
+
+/// Test conversion of a column-major numpy array.
+#[test]
+fn mutable_view() {
+	let gil = pyo3::Python::acquire_gil();
+	let context = Context::new_with_gil(gil.python()).unwrap();
+	python! {
+		#![context = &context]
+		import numpy as np
+		matrix = np.array([
+			[1.0, 2.0, 3.0],
+			[4.0, 5.0, 6.0],
+			[7.0, 8.0, 9.0],
+		]);
+
+		assert matrix[1, 2] == 6.0
+	}
+
+	let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
+
+	let mut matrix : nalgebra::MatrixSliceMut<f64, U3, U3, _, _> = assert_ok!(unsafe { matrix_slice_mut_from_python(matrix) });
+
+	matrix[(1, 2)] = 1337.0;
+
+	// TODO: Do we need to drop the matrix view here to avoid UB?
+
+	python! {
+		#![context = &context]
+		assert matrix[1, 2] == 1337
+	}
 }

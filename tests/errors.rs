@@ -87,3 +87,20 @@ fn wrong_data_type() {
 	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i64, U1, U1>(get_global("matrix_f64")));
 	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i64, U1, U1>(get_global("matrix_i32")));
 }
+
+#[test]
+fn unaligned_data() {
+	let gil = pyo3::Python::acquire_gil();
+	let py  = gil.python();
+	let context = Context::new_with_gil(py).unwrap();
+
+	python! {
+		#![context = &context]
+		import numpy as np
+		unaligned = np.array([range(8)], dtype=np.uint8)[:, 1:7].view(np.uint16)
+	}
+
+	let get_global = |name| context.globals(py).get_item(name).unwrap();
+
+	assert_match!(Err(Error::UnalignedArray(_)) = matrix_from_python::<u16, U1, U3>(get_global("unaligned")));
+}

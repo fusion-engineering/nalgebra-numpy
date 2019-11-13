@@ -11,37 +11,47 @@ use pyo3::AsPyPointer;
 //		.reshape(matrix.shape()).unwrap()
 //}
 
-/// `nalgebra` buffer type for matrices created by the default allocator.
+/// [`nalgebra`] buffer type for matrices created by the default allocator.
 type Buffer<N, R, C> = <nalgebra::base::DefaultAllocator as nalgebra::base::allocator::Allocator<N, R, C>>::Buffer;
 
+/// Compile-time matrix dimension used in errors.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum Dimension {
 	Static(usize),
 	Dynamic,
 }
 
+/// Compile-time shape of a matrix used in errors.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct Shape(Dimension, Dimension);
 
+/// Error that can occur when converting from Python to a nalgebra matrix.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum Error {
+	/// The Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 	WrongObjectType(WrongObjectTypeError),
+
+	/// The input array has the wrong shape.
 	WrongShape(WrongShapeError),
+
+	/// The input array has the wrong data type.
 	WrongDataType(WrongDataTypeError),
 }
 
+/// Error indicating the Python object is not a [`numpy.ndarray`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html).
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct WrongObjectTypeError {
-	pub expected: String,
 	pub actual: String,
 }
 
+/// Error indicating that the input array has the wrong shape.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct WrongShapeError {
 	pub expected: Shape,
 	pub actual: Vec<usize>
 }
 
+/// Error indicating that the input array has the wrong data type.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct WrongDataTypeError {
 	pub expected: numpy::NpyDataType,
@@ -141,17 +151,18 @@ where
 	Ok(Matrix::from_data(storage))
 }
 
+/// Check if an object is numpy array and cast the pointer.
 unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyArrayObject, WrongObjectTypeError> {
 	if npyffi::array::PyArray_Check(object) == 1 {
 		Ok(&mut *(object as *mut npyffi::objects::PyArrayObject))
 	} else {
 		return Err(WrongObjectTypeError {
 			actual: object_type_string(object),
-			expected: String::from("numpy.ndarray"),
 		})
 	}
 }
 
+/// Check if a numpy array has a compatible shape.
 unsafe fn check_shape<R, C>(array: *mut PyArrayObject) -> Result<(R, C), WrongShapeError>
 where
 	R: nalgebra::Dim,
@@ -194,6 +205,7 @@ where
 	}
 }
 
+/// Check if a numpy array has an data type that is equivalent to N.
 unsafe fn check_equiv_dtype<N: numpy::TypeNum>(array: *mut PyArrayObject) -> Result<(), WrongDataTypeError> {
 	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, N::typenum_default()) == 1 {
 		Ok(())
@@ -205,6 +217,7 @@ unsafe fn check_equiv_dtype<N: numpy::TypeNum>(array: *mut PyArrayObject) -> Res
 	}
 }
 
+/// Get a string representing the type of a Python object.
 unsafe fn object_type_string(object: *mut pyo3::ffi::PyObject) -> String {
 	let py_type = (*object).ob_type;
 	let name = (*py_type).tp_name;
@@ -212,6 +225,7 @@ unsafe fn object_type_string(object: *mut pyo3::ffi::PyObject) -> String {
 	String::from_utf8_lossy(name).into_owned()
 }
 
+/// Get a string representing the data type of a numpy array.
 unsafe fn data_type_string(array: *mut PyArrayObject) -> String {
 	// Convert the dtype to string.
 	// Don't forget to call Py_DecRef in all paths if py_name isn't null.
@@ -233,6 +247,7 @@ unsafe fn data_type_string(array: *mut PyArrayObject) -> String {
 	name
 }
 
+/// Get the shape of a numpy array as [`Vec`].
 unsafe fn shape(object: *mut numpy::npyffi::objects::PyArrayObject) -> Vec<usize> {
 	let num_dims = (*object).nd;
 	let dimensions = std::slice::from_raw_parts((*object).dimensions as *const usize, num_dims as usize);
@@ -285,7 +300,7 @@ impl std::fmt::Display for Error {
 
 impl std::fmt::Display for WrongObjectTypeError {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "wrong object type: expected {}, found {}", self.expected, self.actual)
+		write!(f, "wrong object type: expected a numpy.ndarray, found {}", self.actual)
 	}
 }
 

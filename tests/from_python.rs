@@ -29,8 +29,6 @@ fn matrix3_f64() {
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
 	));
-
-	assert_match!(Err(Error::WrongDataType) = matrix_from_python::<f32, U3, U3>(matrix));
 }
 
 #[test]
@@ -55,6 +53,4 @@ fn matrix3_f32() {
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
 	));
-
-	assert_match!(Err(Error::WrongDataType) = matrix_from_python::<f64, U3, U3>(matrix));
 }

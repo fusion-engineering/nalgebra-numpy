@@ -101,6 +101,7 @@ where
 	Ok(unsafe { matrix_slice_from_python::<N, R, C>(input) }?.into_owned())
 }
 
+/// Same as [`matrix_slice_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 pub unsafe fn matrix_slice_from_python_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
@@ -120,6 +121,7 @@ where
 	Ok(Matrix::from_data(storage))
 }
 
+/// Same as [`matrix_slice_mut_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 pub unsafe fn matrix_slice_mut_from_python_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>

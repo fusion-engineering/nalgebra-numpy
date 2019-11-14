@@ -44,7 +44,7 @@
 //! }
 //!
 //! let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
-//! let matrix : nalgebra::Matrix3<f64> = matrix_from_python(matrix)?;
+//! let matrix : nalgebra::Matrix3<f64> = matrix_from_python(gil.python(), matrix)?;
 //!
 //! assert_eq!(matrix, nalgebra::Matrix3::new(
 //!     1.0, 2.0, 3.0,
@@ -77,7 +77,7 @@
 //! #
 //! # let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 //!
-//! let matrix : DMatrix<f64> = matrix_from_python(matrix)?;
+//! let matrix : DMatrix<f64> = matrix_from_python(gil.python(), matrix)?;
 //! assert_eq!(matrix, DMatrix::from_row_slice(3, 3, &[
 //!     1.0, 2.0, 3.0,
 //!     4.0, 5.0, 6.0,
@@ -108,7 +108,7 @@
 //! # }
 //! # let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 //!
-//! let matrix : MatrixMN<f64, U3, Dynamic> = matrix_from_python(matrix)?;
+//! let matrix : MatrixMN<f64, U3, Dynamic> = matrix_from_python(gil.python(), matrix)?;
 //! assert_eq!(matrix, MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
 //!     1.0, 2.0, 3.0,
 //!     4.0, 5.0, 6.0,

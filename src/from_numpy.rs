@@ -2,7 +2,7 @@ use nalgebra::{Dynamic, Matrix};
 use nalgebra::base::{SliceStorage, SliceStorageMut};
 use numpy::npyffi::objects::PyArrayObject;
 use numpy::{npyffi};
-use pyo3::AsPyPointer;
+use pyo3::{AsPyPointer, types::PyAny};
 
 /// Compile-time matrix dimension used in errors.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
@@ -57,13 +57,14 @@ pub struct UnalignedArrayError;
 /// This function creates a const slice that references data owned by Python.
 /// The user must ensure that the data is not modified through other pointers or references.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
+pub unsafe fn matrix_slice_from_python<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
+	O: 'a + AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_from_python_ptr(input.as_ptr())
+	matrix_slice_from_python_ptr(input.as_ref().as_ptr())
 }
 
 /// Create a mutable nalgebra view from a numpy array.
@@ -76,13 +77,14 @@ where
 /// This function creates a mutable slice that references data owned by Python.
 /// The user must ensure that no other Rust references to the same data exist.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_mut_from_python<'a, N, R, C>(input: &'a pyo3::types::PyAny) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
+pub unsafe fn matrix_slice_mut_from_python<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
+	O: 'a + AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_mut_from_python_ptr(input.as_ptr())
+	matrix_slice_mut_from_python_ptr(input.as_ref().as_ptr())
 }
 
 /// Create an owning nalgebra matrix from a numpy array.
@@ -92,14 +94,15 @@ where
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
 /// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
-pub fn matrix_from_python<N, R, C>(input: &pyo3::types::PyAny) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
+pub fn matrix_from_python<O, N, R, C>(py: pyo3::Python, input: O) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
 where
+	O: AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 	nalgebra::base::default_allocator::DefaultAllocator: nalgebra::base::allocator::Allocator<N, R, C>,
 {
-	Ok(unsafe { matrix_slice_from_python::<N, R, C>(input) }?.into_owned())
+	Ok(unsafe { matrix_slice_from_python::<O, N, R, C>(py, input) }?.into_owned())
 }
 
 /// Same as [`matrix_slice_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.

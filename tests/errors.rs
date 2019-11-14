@@ -22,9 +22,9 @@ fn wrong_type() {
 
 	let get_global = |name| context.globals(py).get_item(name).unwrap();
 
-	assert_match!(Err(Error::WrongObjectType(_)) = matrix_from_python::<f64, U1, U1>(get_global("float")));
-	assert_match!(Err(Error::WrongObjectType(_)) = matrix_from_python::<i32, U1, U1>(get_global("int")));
-	assert_match!(Err(Error::WrongObjectType(_)) = matrix_from_python::<f64, U1, U3>(get_global("list")));
+	assert_match!(Err(Error::WrongObjectType(_)) = matrix_from_python::<_, f64, U1, U1>(py, get_global("float")));
+	assert_match!(Err(Error::WrongObjectType(_)) = matrix_from_python::<_, i32, U1, U1>(py, get_global("int")));
+	assert_match!(Err(Error::WrongObjectType(_)) = matrix_from_python::<_, f64, U1, U3>(py, get_global("list")));
 }
 
 #[test]
@@ -44,9 +44,9 @@ fn wrong_shape() {
 
 	let get_global = |name| context.globals(py).get_item(name).unwrap();
 
-	assert_match!(Ok(_) = matrix_from_python::<f64, U2, U3>(get_global("matrix")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f64, U1, U1>(get_global("matrix")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f64, U3, U2>(get_global("matrix")));
+	assert_match!(Ok(_) = matrix_from_python::<_, f64, U2, U3>(py, get_global("matrix")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f64, U1, U1>(py, get_global("matrix")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f64, U3, U2>(py, get_global("matrix")));
 }
 
 #[test]
@@ -66,26 +66,26 @@ fn wrong_data_type() {
 
 	let get_global = |name| context.globals(py).get_item(name).unwrap();
 
-	assert_match!(Ok(_) = matrix_from_python::<f32, U1, U1>(get_global("matrix_f32")));
-	assert_match!(Ok(_) = matrix_from_python::<f64, U1, U1>(get_global("matrix_f64")));
-	assert_match!(Ok(_) = matrix_from_python::<i32, U1, U1>(get_global("matrix_i32")));
-	assert_match!(Ok(_) = matrix_from_python::<i64, U1, U1>(get_global("matrix_i64")));
+	assert_match!(Ok(_) = matrix_from_python::<_, f32, U1, U1>(py, get_global("matrix_f32")));
+	assert_match!(Ok(_) = matrix_from_python::<_, f64, U1, U1>(py, get_global("matrix_f64")));
+	assert_match!(Ok(_) = matrix_from_python::<_, i32, U1, U1>(py, get_global("matrix_i32")));
+	assert_match!(Ok(_) = matrix_from_python::<_, i64, U1, U1>(py, get_global("matrix_i64")));
 
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f32, U1, U1>(get_global("matrix_f64")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f32, U1, U1>(get_global("matrix_i32")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f32, U1, U1>(get_global("matrix_i64")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f32, U1, U1>(py, get_global("matrix_f64")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f32, U1, U1>(py, get_global("matrix_i32")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f32, U1, U1>(py, get_global("matrix_i64")));
 
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f64, U1, U1>(get_global("matrix_f32")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f64, U1, U1>(get_global("matrix_i32")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<f64, U1, U1>(get_global("matrix_i64")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f64, U1, U1>(py, get_global("matrix_f32")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f64, U1, U1>(py, get_global("matrix_i32")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, f64, U1, U1>(py, get_global("matrix_i64")));
 
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i32, U1, U1>(get_global("matrix_f32")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i32, U1, U1>(get_global("matrix_f64")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i32, U1, U1>(get_global("matrix_i64")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, i32, U1, U1>(py, get_global("matrix_f32")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, i32, U1, U1>(py, get_global("matrix_f64")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, i32, U1, U1>(py, get_global("matrix_i64")));
 
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i64, U1, U1>(get_global("matrix_f32")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i64, U1, U1>(get_global("matrix_f64")));
-	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<i64, U1, U1>(get_global("matrix_i32")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, i64, U1, U1>(py, get_global("matrix_f32")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, i64, U1, U1>(py, get_global("matrix_f64")));
+	assert_match!(Err(Error::IncompatibleArray(_)) = matrix_from_python::<_, i64, U1, U1>(py, get_global("matrix_i32")));
 }
 
 #[test]
@@ -102,5 +102,5 @@ fn unaligned_data() {
 
 	let get_global = |name| context.globals(py).get_item(name).unwrap();
 
-	assert_match!(Err(Error::UnalignedArray(_)) = matrix_from_python::<u16, U1, U3>(get_global("unaligned")));
+	assert_match!(Err(Error::UnalignedArray(_)) = matrix_from_python::<_, u16, U1, U3>(py, get_global("unaligned")));
 }

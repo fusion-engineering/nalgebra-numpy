@@ -8,7 +8,7 @@
 //! You can use [`matrix_from_numpy`] to copy the data into a new matrix,
 //! or one of [`matrix_slice_from_numpy`] or [`matrix_slice_mut_from_numpy`] to create a view.
 //! If a numpy array is not compatible with the requested matrix type,
-//! and error is returned.
+//! an error is returned.
 //!
 //! Keep in mind though that the borrow checker can not enforce rules on data managed by a Python object.
 //! You could potentially keep an immutable view around in Rust, and then modify the data from Python.

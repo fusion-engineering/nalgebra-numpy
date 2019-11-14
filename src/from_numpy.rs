@@ -47,7 +47,7 @@ pub struct IncompatibleArrayError {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct UnalignedArrayError;
 
-/// Create a [`nalgebra::MatrixSlice`] from a Python [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
+/// Create a nalgebra view from a numpy array.
 ///
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
@@ -66,7 +66,7 @@ where
 	matrix_slice_from_python_ptr(input.as_ptr())
 }
 
-/// Create a [`nalgebra::MatrixSliceMut`] from a Python [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
+/// Create a mutable nalgebra view from a numpy array.
 ///
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
@@ -85,7 +85,7 @@ where
 	matrix_slice_mut_from_python_ptr(input.as_ptr())
 }
 
-/// Create a [`nalgebra::Matrix`] from a Python [`numpy.ndarray`](https://numpy.org/devdocs/reference/arrays.ndarray.html).
+/// Create an owning nalgebra matrix from a numpy array.
 ///
 /// The data is copied into the matrix.
 ///

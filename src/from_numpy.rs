@@ -57,14 +57,14 @@ pub struct UnalignedArrayError;
 /// This function creates a const slice that references data owned by Python.
 /// The user must ensure that the data is not modified through other pointers or references.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_from_python<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
+pub unsafe fn matrix_slice_from_numpy<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	O: 'a + AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_from_python_ptr(input.as_ref().as_ptr())
+	matrix_slice_from_numpy_ptr(input.as_ref().as_ptr())
 }
 
 /// Create a mutable nalgebra view from a numpy array.
@@ -77,14 +77,14 @@ where
 /// This function creates a mutable slice that references data owned by Python.
 /// The user must ensure that no other Rust references to the same data exist.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_mut_from_python<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
+pub unsafe fn matrix_slice_mut_from_numpy<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	O: 'a + AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_mut_from_python_ptr(input.as_ref().as_ptr())
+	matrix_slice_mut_from_numpy_ptr(input.as_ref().as_ptr())
 }
 
 /// Create an owning nalgebra matrix from a numpy array.
@@ -94,7 +94,7 @@ where
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
 /// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
-pub fn matrix_from_python<O, N, R, C>(py: pyo3::Python, input: O) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
+pub fn matrix_from_numpy<O, N, R, C>(py: pyo3::Python, input: O) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
 where
 	O: AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -102,12 +102,12 @@ where
 	C: nalgebra::Dim,
 	nalgebra::base::default_allocator::DefaultAllocator: nalgebra::base::allocator::Allocator<N, R, C>,
 {
-	Ok(unsafe { matrix_slice_from_python::<O, N, R, C>(py, input) }?.into_owned())
+	Ok(unsafe { matrix_slice_from_numpy::<O, N, R, C>(py, input) }?.into_owned())
 }
 
-/// Same as [`matrix_slice_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
+/// Same as [`matrix_slice_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 #[allow(clippy::missing_safety_doc)]
-pub unsafe fn matrix_slice_from_python_ptr<'a, N, R, C>(
+pub unsafe fn matrix_slice_from_numpy_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
@@ -126,9 +126,9 @@ where
 	Ok(Matrix::from_data(storage))
 }
 
-/// Same as [`matrix_slice_mut_from_python`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
+/// Same as [`matrix_slice_mut_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 #[allow(clippy::missing_safety_doc)]
-pub unsafe fn matrix_slice_mut_from_python_ptr<'a, N, R, C>(
+pub unsafe fn matrix_slice_mut_from_numpy_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where

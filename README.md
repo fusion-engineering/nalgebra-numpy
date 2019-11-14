@@ -8,9 +8,9 @@ but the other direction will be added soon.
 ## Conversion from numpy to nalgebra.
 
 It is possible to create either a view or a copy of a numpy array.
-You can use [`matrix_from_python`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_from_python.html) to copy the data into a new matrix,
-or one of [`matrix_slice_from_python`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_from_python.html)
-or [`matrix_slice_mut_from_python`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_mut_from_python.html) to create a view.
+You can use [`matrix_from_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_from_numpy.html) to copy the data into a new matrix,
+or one of [`matrix_slice_from_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_from_numpy.html)
+or [`matrix_slice_mut_from_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_mut_from_numpy.html) to create a view.
 
 Keep in mind though that the borrow checker can not enforce rules on data managed by a Python object.
 You could potentially keep an immutable view around in Rust, and then modify the data from Python.
@@ -23,7 +23,7 @@ Copy a numpy array to a new fixed size matrix:
 ```rust
 #![feature(proc_macro_hygiene)]
 use inline_python::{Context, python};
-use nalgebra_numpy::{matrix_from_python};
+use nalgebra_numpy::{matrix_from_numpy};
 
 let gil = pyo3::Python::acquire_gil();
 let context = Context::new_with_gil(gil.python()).unwrap();
@@ -38,7 +38,7 @@ python! {
 }
 
 let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
-let matrix : nalgebra::Matrix3<f64> = matrix_from_python(matrix)?;
+let matrix : nalgebra::Matrix3<f64> = matrix_from_numpy(matrix)?;
 
 assert_eq!(matrix, nalgebra::Matrix3::new(
     1.0, 2.0, 3.0,
@@ -55,7 +55,7 @@ use nalgebra::DMatrix;
 
 // <snip>
 
-let matrix : DMatrix<f64> = matrix_from_python(matrix)?;
+let matrix : DMatrix<f64> = matrix_from_numpy(matrix)?;
 assert_eq!(matrix, DMatrix::from_row_slice(3, 3, &[
     1.0, 2.0, 3.0,
     4.0, 5.0, 6.0,
@@ -70,7 +70,7 @@ use nalgebra::{MatrixMN, Dynamic, U3};
 
 // <snip>
 
-let matrix : MatrixMN<f64, U3, Dynamic> = matrix_from_python(matrix)?;
+let matrix : MatrixMN<f64, U3, Dynamic> = matrix_from_numpy(matrix)?;
 assert_eq!(matrix, MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
     1.0, 2.0, 3.0,
     4.0, 5.0, 6.0,

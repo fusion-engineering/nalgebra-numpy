@@ -19,3 +19,4 @@ pyo3 = "0.8.2"
 
 [dev-dependencies]
 inline-python = "0.3.1"
+assert2 = "0.1.1"

@@ -4,6 +4,7 @@ use inline_python::{python, Context};
 use nalgebra_numpy::matrix_from_numpy;
 use nalgebra_numpy::matrix_slice_mut_from_numpy;
 use nalgebra::{Dynamic, U2, U3};
+use assert2::assert;
 
 #[macro_use]
 mod assert;
@@ -27,7 +28,7 @@ fn matrix3_f64() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 	let matrix : nalgebra::Matrix3<f64> = assert_ok!(matrix_from_numpy(py, matrix));
 
-	assert_eq!(matrix, nalgebra::Matrix3::new(
+	assert!(matrix == nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
@@ -53,7 +54,7 @@ fn matrix3_f32() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 	let matrix : nalgebra::Matrix3<f32> = assert_ok!(matrix_from_numpy(py, matrix));
 
-	assert_eq!(matrix, nalgebra::Matrix3::new(
+	assert!(matrix == nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
@@ -79,7 +80,7 @@ fn matrixd() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
 	let matrix : nalgebra::DMatrix<f64> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert_eq!(matrix, nalgebra::DMatrix::from_row_slice(3, 3, &[
+	assert!(matrix == nalgebra::DMatrix::from_row_slice(3, 3, &[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
@@ -105,7 +106,7 @@ fn matrix3d() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
 	let matrix : nalgebra::MatrixMN<f64, Dynamic, U3> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert_eq!(matrix, nalgebra::MatrixMN::<f64, Dynamic, U3>::from_row_slice(&[
+	assert!(matrix == nalgebra::MatrixMN::<f64, Dynamic, U3>::from_row_slice(&[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
@@ -131,7 +132,7 @@ fn matrixd3() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
 	let matrix : nalgebra::MatrixMN<f64, U3, Dynamic> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert_eq!(matrix, nalgebra::MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
+	assert!(matrix == nalgebra::MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,
@@ -157,7 +158,7 @@ fn non_contiguous() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
 	let matrix : nalgebra::MatrixN<f64, U2> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert_eq!(matrix, nalgebra::MatrixN::<f64, U2>::new(
+	assert!(matrix == nalgebra::MatrixN::<f64, U2>::new(
 		1.0, 2.0,
 		4.0, 5.0,
 	));
@@ -182,7 +183,7 @@ fn column_major() {
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
 	let matrix : nalgebra::MatrixN<f64, U3> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert_eq!(matrix, nalgebra::Matrix3::new(
+	assert!(matrix == nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
 		7.0, 8.0, 9.0,

@@ -51,15 +51,15 @@ fn wrong_data_type() {
     let py = gil.python();
     let context = Context::new_with_gil(py);
 
-    python! {
+    context.run(python! {
         import numpy as np
         matrix_f32 = np.array([[1.0]]).astype(np.float32);
         matrix_f64 = np.array([[1.0]]).astype(np.float64);
         matrix_i32 = np.array([[1]]).astype(np.int32);
         matrix_i64 = np.array([[1]]).astype(np.int64);
-    }
+    });
 
-    let get_global = |name| context.globals(py).get_item(name).unwrap();
+    let get_global = |name| context.globals(py).get_item(name).expect(name);
 
     assert!(let Ok(_) = matrix_from_numpy::<f32, U1, U1>(py, get_global("matrix_f32")));
     assert!(let Ok(_) = matrix_from_numpy::<f64, U1, U1>(py, get_global("matrix_f64")));

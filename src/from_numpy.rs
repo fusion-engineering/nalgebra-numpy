@@ -1,7 +1,7 @@
 use nalgebra::base::{SliceStorage, SliceStorageMut};
 use nalgebra::{Dynamic, Matrix};
 use numpy::npyffi;
-use numpy::npyffi::objects::PyArrayObject;
+use numpy::{npyffi::objects::PyArrayObject, Element};
 use pyo3::{types::PyAny, AsPyPointer};
 
 /// Compile-time matrix dimension used in errors.
@@ -39,7 +39,7 @@ pub struct WrongObjectTypeError {
 pub struct IncompatibleArrayError {
 	pub expected_shape: Shape,
 	pub actual_shape: Vec<usize>,
-	pub expected_dtype: numpy::NpyDataType,
+	pub expected_dtype: numpy::DataType,
 	pub actual_dtype: String,
 }
 
@@ -57,17 +57,16 @@ pub struct UnalignedArrayError;
 /// This function creates a const slice that references data owned by Python.
 /// The user must ensure that the data is not modified through other pointers or references.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_from_numpy<'a, O, N, R, C>(
+pub unsafe fn matrix_slice_from_numpy<'a, N, R, C>(
 	_py: pyo3::Python,
-	input: O,
+	input: &'a PyAny,
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
-	O: 'a + AsRef<PyAny>,
-	N: nalgebra::Scalar + numpy::TypeNum,
+	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_from_numpy_ptr(input.as_ref().as_ptr())
+	matrix_slice_from_numpy_ptr(input.as_ptr())
 }
 
 /// Create a mutable nalgebra view from a numpy array.
@@ -80,17 +79,16 @@ where
 /// This function creates a mutable slice that references data owned by Python.
 /// The user must ensure that no other Rust references to the same data exist.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_mut_from_numpy<'a, O, N, R, C>(
+pub unsafe fn matrix_slice_mut_from_numpy<'a, N, R, C>(
 	_py: pyo3::Python,
-	input: O,
+	input: &'a PyAny,
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
-	O: 'a + AsRef<PyAny>,
-	N: nalgebra::Scalar + numpy::TypeNum,
+	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_mut_from_numpy_ptr(input.as_ref().as_ptr())
+	matrix_slice_mut_from_numpy_ptr(input.as_ptr())
 }
 
 /// Create an owning nalgebra matrix from a numpy array.
@@ -100,15 +98,14 @@ where
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
 /// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
-pub fn matrix_from_numpy<O, N, R, C>(py: pyo3::Python, input: O) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
+pub fn matrix_from_numpy<N, R, C>(py: pyo3::Python, input: &PyAny) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
 where
-	O: AsRef<PyAny>,
-	N: nalgebra::Scalar + numpy::TypeNum,
+	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 	nalgebra::base::default_allocator::DefaultAllocator: nalgebra::base::allocator::Allocator<N, R, C>,
 {
-	Ok(unsafe { matrix_slice_from_numpy::<O, N, R, C>(py, input) }?.into_owned())
+	Ok(unsafe { matrix_slice_from_numpy::<N, R, C>(py, input) }?.into_owned())
 }
 
 /// Same as [`matrix_slice_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
@@ -117,7 +114,7 @@ pub unsafe fn matrix_slice_from_numpy_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject,
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
-	N: nalgebra::Scalar + numpy::TypeNum,
+	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
@@ -138,7 +135,7 @@ pub unsafe fn matrix_slice_mut_from_numpy_ptr<'a, N, R, C>(
 	array: *mut pyo3::ffi::PyObject,
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
-	N: nalgebra::Scalar + numpy::TypeNum,
+	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
@@ -167,7 +164,7 @@ unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyAr
 /// Check if a numpy array is compatible and return the runtime shape.
 unsafe fn check_array_compatible<N, R, C>(array: *mut PyArrayObject) -> Result<(R, C), IncompatibleArrayError>
 where
-	N: numpy::TypeNum,
+	N: numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
@@ -180,7 +177,7 @@ where
 		IncompatibleArrayError {
 			expected_shape,
 			actual_shape: shape(array),
-			expected_dtype: N::npy_data_type(),
+			expected_dtype: N::DATA_TYPE,
 			actual_dtype: data_type_string(array),
 		}
 	};
@@ -203,8 +200,9 @@ where
 		return Err(make_error());
 	}
 
+	let t2: u32 = N::DATA_TYPE.into_ffi_dtype() as u32;
 	// Check the data type of the input array.
-	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, N::typenum_default()) != 1 {
+	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, t2 as i32) != 1 {
 		return Err(make_error());
 	}
 
@@ -326,28 +324,27 @@ impl std::fmt::Display for UnalignedArrayError {
 	}
 }
 
-/// Helper to format [`numpy::NpyDataType`] more consistently.
-struct FormatDataType<'a>(&'a numpy::NpyDataType);
+/// Helper to format [`numpy::DataType`] more consistently.
+struct FormatDataType<'a>(&'a numpy::DataType);
 
 impl std::fmt::Display for FormatDataType<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		let Self(dtype) = self;
 		match dtype {
-			numpy::NpyDataType::Bool => write!(f, "bool"),
-			numpy::NpyDataType::Complex32 => write!(f, "complex32"),
-			numpy::NpyDataType::Complex64 => write!(f, "complex64"),
-			numpy::NpyDataType::Float32 => write!(f, "float32"),
-			numpy::NpyDataType::Float64 => write!(f, "float64"),
-			numpy::NpyDataType::Int8 => write!(f, "int8"),
-			numpy::NpyDataType::Int16 => write!(f, "int16"),
-			numpy::NpyDataType::Int32 => write!(f, "int32"),
-			numpy::NpyDataType::Int64 => write!(f, "int64"),
-			numpy::NpyDataType::PyObject => write!(f, "object"),
-			numpy::NpyDataType::Uint8 => write!(f, "uint8"),
-			numpy::NpyDataType::Uint16 => write!(f, "uint16"),
-			numpy::NpyDataType::Uint32 => write!(f, "uint32"),
-			numpy::NpyDataType::Uint64 => write!(f, "uint64"),
-			numpy::NpyDataType::Unsupported => write!(f, "unsupported"),
+			numpy::DataType::Bool => write!(f, "bool"),
+			numpy::DataType::Complex32 => write!(f, "complex32"),
+			numpy::DataType::Complex64 => write!(f, "complex64"),
+			numpy::DataType::Float32 => write!(f, "float32"),
+			numpy::DataType::Float64 => write!(f, "float64"),
+			numpy::DataType::Int8 => write!(f, "int8"),
+			numpy::DataType::Int16 => write!(f, "int16"),
+			numpy::DataType::Int32 => write!(f, "int32"),
+			numpy::DataType::Int64 => write!(f, "int64"),
+			numpy::DataType::Object => write!(f, "object"),
+			numpy::DataType::Uint8 => write!(f, "uint8"),
+			numpy::DataType::Uint16 => write!(f, "uint16"),
+			numpy::DataType::Uint32 => write!(f, "uint32"),
+			numpy::DataType::Uint64 => write!(f, "uint64"),
 		}
 	}
 }

@@ -11,7 +11,7 @@ pub fn matrix_to_numpy<'py, N, R, C, S>(
 	matrix: &Matrix<N, R, C, S>
 ) -> pyo3::PyObject
 where
-	N: nalgebra::Scalar + numpy::TypeNum,
+	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 	S: nalgebra::storage::Storage<N, R, C>,
@@ -20,7 +20,7 @@ where
 	for r in 0..matrix.nrows() {
 		for c in 0..matrix.ncols() {
 			unsafe {
-				*array.uget_mut((r, c)) = matrix[(r, c)];
+				*array.uget_mut((r, c)) = matrix[(r, c)].clone();
 			}
 		}
 	}

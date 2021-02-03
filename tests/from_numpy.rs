@@ -14,16 +14,16 @@ mod assert;
 fn matrix3_f64() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+
+    context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		])
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 	let matrix : nalgebra::Matrix3<f64> = assert_ok!(matrix_from_numpy(py, matrix));
@@ -40,16 +40,15 @@ fn matrix3_f64() {
 fn matrix3_f32() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		]).astype(np.float32)
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 	let matrix : nalgebra::Matrix3<f32> = assert_ok!(matrix_from_numpy(py, matrix));
@@ -66,16 +65,15 @@ fn matrix3_f32() {
 fn matrixd() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		])
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
@@ -92,16 +90,15 @@ fn matrixd() {
 fn matrix3d() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		])
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
@@ -118,16 +115,15 @@ fn matrix3d() {
 fn matrixd3() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		])
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
@@ -144,16 +140,15 @@ fn matrixd3() {
 fn non_contiguous() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		])[0:2, 0:2];
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
@@ -169,16 +164,15 @@ fn non_contiguous() {
 fn column_major() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
 			[4.0, 5.0, 6.0],
 			[7.0, 8.0, 9.0],
 		], order='F');
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
@@ -195,9 +189,8 @@ fn column_major() {
 fn mutable_view() {
 	let gil = pyo3::Python::acquire_gil();
 	let py = gil.python();
-	let context = Context::new_with_gil(py).unwrap();
-	python! {
-		#![context = &context]
+	let context = Context::new_with_gil(py);
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
@@ -206,7 +199,7 @@ fn mutable_view() {
 		]);
 
 		assert matrix[1, 2] == 6.0
-	}
+	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
@@ -216,8 +209,7 @@ fn mutable_view() {
 
 	// TODO: Do we need to drop the matrix view here to avoid UB?
 
-	python! {
-		#![context = &context]
+	context.run(python! {
 		assert matrix[1, 2] == 1337
-	}
+	});
 }

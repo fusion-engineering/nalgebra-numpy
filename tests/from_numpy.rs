@@ -1,10 +1,10 @@
 #![feature(proc_macro_hygiene)]
 
+use assert2::assert;
 use inline_python::{python, Context};
+use nalgebra::{Dynamic, U2, U3};
 use nalgebra_numpy::matrix_from_numpy;
 use nalgebra_numpy::matrix_slice_mut_from_numpy;
-use nalgebra::{Dynamic, U2, U3};
-use assert2::assert;
 
 #[macro_use]
 mod assert;
@@ -16,7 +16,7 @@ fn matrix3_f64() {
 	let py = gil.python();
 	let context = Context::new_with_gil(py);
 
-    context.run(python! {
+	context.run(python! {
 		import numpy as np
 		matrix = np.array([
 			[1.0, 2.0, 3.0],
@@ -26,13 +26,9 @@ fn matrix3_f64() {
 	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
-	let matrix : nalgebra::Matrix3<f64> = assert_ok!(matrix_from_numpy(py, matrix));
+	let matrix: nalgebra::Matrix3<f64> = assert_ok!(matrix_from_numpy(py, matrix));
 
-	assert!(matrix == nalgebra::Matrix3::new(
-		1.0, 2.0, 3.0,
-		4.0, 5.0, 6.0,
-		7.0, 8.0, 9.0,
-	));
+	assert!(matrix == nalgebra::Matrix3::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,));
 }
 
 /// Test conversion of a numpy array to a Matrix3<f32>.
@@ -51,13 +47,9 @@ fn matrix3_f32() {
 	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
-	let matrix : nalgebra::Matrix3<f32> = assert_ok!(matrix_from_numpy(py, matrix));
+	let matrix: nalgebra::Matrix3<f32> = assert_ok!(matrix_from_numpy(py, matrix));
 
-	assert!(matrix == nalgebra::Matrix3::new(
-		1.0, 2.0, 3.0,
-		4.0, 5.0, 6.0,
-		7.0, 8.0, 9.0,
-	));
+	assert!(matrix == nalgebra::Matrix3::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,));
 }
 
 /// Test conversion of a numpy array to a DMatrix3<f64>.
@@ -77,12 +69,8 @@ fn matrixd() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::DMatrix<f64> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert!(matrix == nalgebra::DMatrix::from_row_slice(3, 3, &[
-		1.0, 2.0, 3.0,
-		4.0, 5.0, 6.0,
-		7.0, 8.0, 9.0,
-	]));
+	let matrix: nalgebra::DMatrix<f64> = assert_ok!(matrix_from_numpy(py, matrix));
+	assert!(matrix == nalgebra::DMatrix::from_row_slice(3, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,]));
 }
 
 /// Test conversion of a numpy array to a MatrixMN<f64, Dynamic, U3>.
@@ -102,12 +90,8 @@ fn matrix3d() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixMN<f64, Dynamic, U3> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert!(matrix == nalgebra::MatrixMN::<f64, Dynamic, U3>::from_row_slice(&[
-		1.0, 2.0, 3.0,
-		4.0, 5.0, 6.0,
-		7.0, 8.0, 9.0,
-	]));
+	let matrix: nalgebra::MatrixMN<f64, Dynamic, U3> = assert_ok!(matrix_from_numpy(py, matrix));
+	assert!(matrix == nalgebra::MatrixMN::<f64, Dynamic, U3>::from_row_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,]));
 }
 
 /// Test conversion of a numpy array to a MatrixMN<f64, U3, Dynamic>.
@@ -127,12 +111,8 @@ fn matrixd3() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixMN<f64, U3, Dynamic> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert!(matrix == nalgebra::MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
-		1.0, 2.0, 3.0,
-		4.0, 5.0, 6.0,
-		7.0, 8.0, 9.0,
-	]));
+	let matrix: nalgebra::MatrixMN<f64, U3, Dynamic> = assert_ok!(matrix_from_numpy(py, matrix));
+	assert!(matrix == nalgebra::MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,]));
 }
 
 /// Test conversion of a non-coniguous numpy array.
@@ -152,11 +132,8 @@ fn non_contiguous() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixN<f64, U2> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert!(matrix == nalgebra::MatrixN::<f64, U2>::new(
-		1.0, 2.0,
-		4.0, 5.0,
-	));
+	let matrix: nalgebra::MatrixN<f64, U2> = assert_ok!(matrix_from_numpy(py, matrix));
+	assert!(matrix == nalgebra::MatrixN::<f64, U2>::new(1.0, 2.0, 4.0, 5.0,));
 }
 
 /// Test conversion of a column-major numpy array.
@@ -176,12 +153,8 @@ fn column_major() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix : nalgebra::MatrixN<f64, U3> = assert_ok!(matrix_from_numpy(py, matrix));
-	assert!(matrix == nalgebra::Matrix3::new(
-		1.0, 2.0, 3.0,
-		4.0, 5.0, 6.0,
-		7.0, 8.0, 9.0,
-	));
+	let matrix: nalgebra::MatrixN<f64, U3> = assert_ok!(matrix_from_numpy(py, matrix));
+	assert!(matrix == nalgebra::Matrix3::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,));
 }
 
 /// Test conversion of a column-major numpy array.
@@ -203,7 +176,7 @@ fn mutable_view() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let mut matrix : nalgebra::MatrixSliceMut<f64, U3, U3, _, _> = assert_ok!(unsafe { matrix_slice_mut_from_numpy(py, matrix) });
+	let mut matrix: nalgebra::MatrixSliceMut<f64, U3, U3, _, _> = assert_ok!(unsafe { matrix_slice_mut_from_numpy(py, matrix) });
 
 	matrix[(1, 2)] = 1337.0;
 

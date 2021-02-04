@@ -6,10 +6,7 @@ use pyo3::IntoPy;
 ///
 /// This does not create a view of the nalgebra matrix.
 /// As such, the matrix can be dropped without problem.
-pub fn matrix_to_numpy<'py, N, R, C, S>(
-	py: pyo3::Python<'py>,
-	matrix: &Matrix<N, R, C, S>
-) -> pyo3::PyObject
+pub fn matrix_to_numpy<'py, N, R, C, S>(py: pyo3::Python<'py>, matrix: &Matrix<N, R, C, S>) -> pyo3::PyObject
 where
 	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,

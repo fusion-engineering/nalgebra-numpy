@@ -200,7 +200,6 @@ where
 		return Err(make_error());
 	}
 
-	let t2: u32 = N::DATA_TYPE.into_ffi_dtype() as u32;
 	// Check the data type of the input array.
 	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, t2 as i32) != 1 {
 		return Err(make_error());

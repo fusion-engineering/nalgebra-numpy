@@ -17,7 +17,7 @@ where
 	for r in 0..matrix.nrows() {
 		for c in 0..matrix.ncols() {
 			unsafe {
-				*array.uget_mut((r, c)) = matrix[(r, c)].clone();
+				*array.uget_mut((r, c)) = matrix[(r, c)].inlined_clone();
 			}
 		}
 	}

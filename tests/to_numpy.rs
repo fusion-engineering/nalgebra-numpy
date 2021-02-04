@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-
 use inline_python::python;
 use nalgebra::{DMatrix, Matrix3};
 use nalgebra_numpy::matrix_to_numpy;

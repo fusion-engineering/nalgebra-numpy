@@ -26,7 +26,6 @@
 //! Copy a numpy array to a new fixed size matrix:
 //!
 //! ```
-//! #![feature(proc_macro_hygiene)]
 //! use inline_python::{Context, python};
 //! use nalgebra_numpy::{matrix_from_numpy};
 //!
@@ -57,7 +56,6 @@
 //! Dynamic matrices are also supported:
 //!
 //! ```
-//! # #![feature(proc_macro_hygiene)]
 //! # use inline_python::{Context, python};
 //! # use nalgebra_numpy::{matrix_from_numpy};
 //! use nalgebra::DMatrix;
@@ -88,7 +86,6 @@
 //! And so are partially dynamic matrices:
 //!
 //! ```
-//! # #![feature(proc_macro_hygiene)]
 //! # use inline_python::{Context, python};
 //! # use nalgebra_numpy::{matrix_from_numpy};
 //! use nalgebra::{MatrixMN, Dynamic, U3};
@@ -117,7 +114,6 @@
 //!
 //! A conversion to python object looks as follows:
 //! ```
-//! # #![feature(proc_macro_hygiene)]
 //! use nalgebra_numpy::matrix_to_numpy;
 //! use nalgebra::Matrix3;
 //! use inline_python::python;

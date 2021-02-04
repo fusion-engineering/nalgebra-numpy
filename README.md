@@ -29,7 +29,6 @@ this directly returns a [`pyo3::PyObject`](https://docs.rs/pyo3/latest/pyo3/stru
 Copy a numpy array to a new fixed size matrix:
 
 ```rust
-#![feature(proc_macro_hygiene)]
 use inline_python::{Context, python};
 use nalgebra_numpy::{matrix_from_numpy};
 

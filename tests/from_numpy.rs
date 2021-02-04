@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-
 use assert2::{assert, let_assert};
 use inline_python::{python, Context};
 use nalgebra::{Dynamic, U2, U3};

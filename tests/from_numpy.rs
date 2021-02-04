@@ -1,13 +1,10 @@
 #![feature(proc_macro_hygiene)]
 
-use assert2::assert;
+use assert2::{assert, let_assert};
 use inline_python::{python, Context};
 use nalgebra::{Dynamic, U2, U3};
 use nalgebra_numpy::matrix_from_numpy;
 use nalgebra_numpy::matrix_slice_mut_from_numpy;
-
-#[macro_use]
-mod assert;
 
 /// Test conversion of a numpy array to a Matrix3<f64>.
 #[test]
@@ -27,7 +24,7 @@ fn matrix3_f64() {
 	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
-	let matrix: nalgebra::Matrix3<f64> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f64, U3, U3>(py, matrix));
 
 	assert!(matrix == nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
@@ -53,7 +50,7 @@ fn matrix3_f32() {
 	});
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
-	let matrix: nalgebra::Matrix3<f32> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f32, U3, U3>(py, matrix));
 
 	assert!(matrix == nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
@@ -80,7 +77,7 @@ fn matrixd() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix: nalgebra::DMatrix<f64> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f64, Dynamic, Dynamic>(py, matrix));
 	assert!(matrix == nalgebra::DMatrix::from_row_slice(3, 3, &[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -106,7 +103,7 @@ fn matrix3d() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix: nalgebra::MatrixMN<f64, Dynamic, U3> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f64, Dynamic, U3>(py, matrix));
 	assert!(matrix == nalgebra::MatrixMN::<f64, Dynamic, U3>::from_row_slice(&[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -132,7 +129,7 @@ fn matrixd3() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix: nalgebra::MatrixMN<f64, U3, Dynamic> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f64, U3, Dynamic>(py, matrix));
 	assert!(matrix == nalgebra::MatrixMN::<f64, U3, Dynamic>::from_row_slice(&[
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -158,7 +155,7 @@ fn non_contiguous() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix: nalgebra::MatrixN<f64, U2> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f64, U2, U2>(py, matrix));
 	assert!(matrix == nalgebra::MatrixN::<f64, U2>::new(
 		1.0, 2.0,
 		4.0, 5.0,
@@ -183,7 +180,7 @@ fn column_major() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let matrix: nalgebra::MatrixN<f64, U3> = assert_ok!(matrix_from_numpy(py, matrix));
+	let_assert!(Ok(matrix) = matrix_from_numpy::<f64, U3, U3>(py, matrix));
 	assert!(matrix == nalgebra::Matrix3::new(
 		1.0, 2.0, 3.0,
 		4.0, 5.0, 6.0,
@@ -211,7 +208,7 @@ fn mutable_view() {
 
 	let matrix = context.globals(py).get_item("matrix").unwrap();
 
-	let mut matrix: nalgebra::MatrixSliceMut<f64, U3, U3, _, _> = assert_ok!(unsafe { matrix_slice_mut_from_numpy(py, matrix) });
+	let_assert!(Ok(mut matrix) = unsafe { matrix_slice_mut_from_numpy::<f64, U3, U3>(py, matrix) });
 
 	matrix[(1, 2)] = 1337.0;
 

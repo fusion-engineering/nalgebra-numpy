@@ -1,7 +1,7 @@
 use nalgebra::base::{SliceStorage, SliceStorageMut};
 use nalgebra::{Dynamic, Matrix};
 use numpy::npyffi;
-use numpy::{npyffi::objects::PyArrayObject};
+use numpy::npyffi::objects::PyArrayObject;
 use pyo3::{types::PyAny, AsPyPointer};
 
 /// Compile-time matrix dimension used in errors.

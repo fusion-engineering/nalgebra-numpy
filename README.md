@@ -1,15 +1,14 @@
 # nalgebra-numpy
 
-This crate provides conversion between [`nalgebra`](https://docs.rs/nalgebra/) and [`numpy`](https://numpy.org/).
+This crate provides conversion between [`nalgebra`] and [`numpy`](https://numpy.org/).
 It is intended to be used when you want to share nalgebra matrices between Python and Rust code,
 for example with [`inline-python`](https://docs.rs/inline-python).
 
 ## Conversion from numpy to nalgebra.
 
 It is possible to create either a view or a copy of a numpy array.
-You can use [`matrix_from_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_from_numpy.html) to copy the data into a new matrix,
-or one of [`matrix_slice_from_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_from_numpy.html)
-or [`matrix_slice_mut_from_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_mut_from_numpy.html) to create a view.
+You can use [`matrix_from_numpy`] to copy the data into a new matrix,
+or one of [`matrix_slice_from_numpy`] or [`matrix_slice_mut_from_numpy`] to create a view.
 If a numpy array is not compatible with the requested matrix type,
 an error is returned.
 
@@ -19,10 +18,10 @@ For this reason, creating any view -- even an immutable one -- is unsafe.
 
 ## Conversion from nalgebra to numpy.
 
-A nalgebra matrix can also be converted to a numpy array, using [`matrix_to_numpy`](https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_to_numpy.html).
+A nalgebra matrix can also be converted to a numpy array, using [`matrix_to_numpy`].
 This function always creates a copy.
 Since all nalgebra arrays can be represented as a numpy array,
-this directly returns a [`pyo3::PyObject`](https://docs.rs/pyo3/latest/pyo3/struct.PyObject.html) rather than a `Result`.
+this directly returns a [`pyo3::PyObject`] rather than a `Result`.
 
 ## Examples.
 
@@ -33,16 +32,15 @@ use inline_python::{Context, python};
 use nalgebra_numpy::{matrix_from_numpy};
 
 let gil = pyo3::Python::acquire_gil();
-let context = Context::new_with_gil(gil.python()).unwrap();
-python! {
-    #![context = &context]
+let context = Context::new_with_gil(gil.python());
+context.run(python! {
     import numpy as np
     matrix = np.array([
         [1.0, 2.0, 3.0],
         [4.0, 5.0, 6.0],
         [7.0, 8.0, 9.0],
     ])
-}
+});
 
 let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 let matrix : nalgebra::Matrix3<f64> = matrix_from_numpy(gil.python(), matrix)?;
@@ -103,3 +101,10 @@ python! {
     ])
 }
 ```
+
+[`nalgebra`]: https://docs.rs/nalgebra
+[`matrix_from_numpy`]: https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_from_numpy.html
+[`matrix_slice_from_numpy`]: https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_from_numpy.html
+[`matrix_slice_mut_from_numpy`]: https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_slice_mut_from_numpy.html
+[`matrix_to_numpy`]: https://docs.rs/nalgebra-numpy/latest/nalgebra_numpy/fn.matrix_to_numpy.html
+[`pyo3::PyObject`]: https://docs.rs/pyo3/latest/pyo3/type.PyObject.html

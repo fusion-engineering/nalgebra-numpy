@@ -32,16 +32,15 @@
 //!
 //! # fn main() -> Result<(), nalgebra_numpy::Error> {
 //! let gil = pyo3::Python::acquire_gil();
-//! let context = Context::new_with_gil(gil.python()).unwrap();
-//! python! {
-//!     #![context = &context]
+//! let context = Context::new_with_gil(gil.python());
+//! context.run(python! {
 //!     import numpy as np
 //!     matrix = np.array([
 //!         [1.0, 2.0, 3.0],
 //!         [4.0, 5.0, 6.0],
 //!         [7.0, 8.0, 9.0],
 //!     ])
-//! }
+//! });
 //!
 //! let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 //! let matrix : nalgebra::Matrix3<f64> = matrix_from_numpy(gil.python(), matrix)?;
@@ -64,16 +63,15 @@
 //! use nalgebra::DMatrix;
 //! # fn main() -> Result<(), nalgebra_numpy::Error> {
 //! # let gil = pyo3::Python::acquire_gil();
-//! # let context = Context::new_with_gil(gil.python()).unwrap();
-//! # python! {
-//! #     #![context = &context]
+//! # let context = Context::new_with_gil(gil.python());
+//! # context.run(python! {
 //! #     import numpy as np
 //! #     matrix = np.array([
 //! #         [1.0, 2.0, 3.0],
 //! #         [4.0, 5.0, 6.0],
 //! #         [7.0, 8.0, 9.0],
 //! #     ])
-//! # }
+//! # });
 //! #
 //! # let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 //!
@@ -96,16 +94,15 @@
 //! use nalgebra::{MatrixMN, Dynamic, U3};
 //! # fn main() -> Result<(), nalgebra_numpy::Error> {
 //! # let gil = pyo3::Python::acquire_gil();
-//! # let context = Context::new_with_gil(gil.python()).unwrap();
-//! # python! {
-//! #     #![context = &context]
+//! # let context = Context::new_with_gil(gil.python());
+//! # context.run(python! {
 //! #     import numpy as np
 //! #     matrix = np.array([
 //! #         [1.0, 2.0, 3.0],
 //! #         [4.0, 5.0, 6.0],
 //! #         [7.0, 8.0, 9.0],
 //! #     ])
-//! # }
+//! # });
 //! # let matrix = context.globals(gil.python()).get_item("matrix").unwrap();
 //!
 //! let matrix : MatrixMN<f64, U3, Dynamic> = matrix_from_numpy(gil.python(), matrix)?;

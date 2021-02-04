@@ -1,15 +1,14 @@
 #![feature(proc_macro_hygiene)]
 
-use inline_python::{python, Context};
-use nalgebra_numpy::{Error, matrix_from_numpy};
-use nalgebra::{U1, U2, U3};
 use assert2::assert;
-
+use inline_python::{python, Context};
+use nalgebra::{U1, U2, U3};
+use nalgebra_numpy::{matrix_from_numpy, Error};
 
 #[test]
 fn wrong_type() {
 	let gil = pyo3::Python::acquire_gil();
-	let py  = gil.python();
+	let py = gil.python();
 	let context = Context::new_with_gil(py).unwrap();
 
 	python! {
@@ -29,7 +28,7 @@ fn wrong_type() {
 #[test]
 fn wrong_shape() {
 	let gil = pyo3::Python::acquire_gil();
-	let py  = gil.python();
+	let py = gil.python();
 	let context = Context::new_with_gil(py).unwrap();
 
 	python! {
@@ -51,7 +50,7 @@ fn wrong_shape() {
 #[test]
 fn wrong_data_type() {
 	let gil = pyo3::Python::acquire_gil();
-	let py  = gil.python();
+	let py = gil.python();
 	let context = Context::new_with_gil(py).unwrap();
 
 	python! {
@@ -90,7 +89,7 @@ fn wrong_data_type() {
 #[test]
 fn unaligned_data() {
 	let gil = pyo3::Python::acquire_gil();
-	let py  = gil.python();
+	let py = gil.python();
 	let context = Context::new_with_gil(py).unwrap();
 
 	python! {

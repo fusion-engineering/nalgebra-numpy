@@ -1,10 +1,11 @@
 #![feature(proc_macro_hygiene)]
 
-use nalgebra_numpy::matrix_to_numpy;
-use nalgebra::{DMatrix, Matrix3};
 use inline_python::python;
+use nalgebra::{DMatrix, Matrix3};
+use nalgebra_numpy::matrix_to_numpy;
 
 #[test]
+#[rustfmt::skip]
 fn fixed_size() {
 	let gil = pyo3::Python::acquire_gil();
 
@@ -25,6 +26,7 @@ fn fixed_size() {
 }
 
 #[test]
+#[rustfmt::skip]
 fn dynamic_size() {
 	let gil = pyo3::Python::acquire_gil();
 

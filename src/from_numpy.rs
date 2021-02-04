@@ -1,8 +1,8 @@
-use nalgebra::{Dynamic, Matrix};
 use nalgebra::base::{SliceStorage, SliceStorageMut};
+use nalgebra::{Dynamic, Matrix};
+use numpy::npyffi;
 use numpy::npyffi::objects::PyArrayObject;
-use numpy::{npyffi};
-use pyo3::{AsPyPointer, types::PyAny};
+use pyo3::{types::PyAny, AsPyPointer};
 
 /// Compile-time matrix dimension used in errors.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
@@ -57,7 +57,10 @@ pub struct UnalignedArrayError;
 /// This function creates a const slice that references data owned by Python.
 /// The user must ensure that the data is not modified through other pointers or references.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_from_numpy<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
+pub unsafe fn matrix_slice_from_numpy<'a, O, N, R, C>(
+	_py: pyo3::Python,
+	input: O,
+) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	O: 'a + AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -77,7 +80,10 @@ where
 /// This function creates a mutable slice that references data owned by Python.
 /// The user must ensure that no other Rust references to the same data exist.
 #[allow(clippy::needless_lifetimes)]
-pub unsafe fn matrix_slice_mut_from_numpy<'a, O, N, R, C>(_py: pyo3::Python, input: O) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
+pub unsafe fn matrix_slice_mut_from_numpy<'a, O, N, R, C>(
+	_py: pyo3::Python,
+	input: O,
+) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	O: 'a + AsRef<PyAny>,
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -108,7 +114,7 @@ where
 /// Same as [`matrix_slice_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn matrix_slice_from_numpy_ptr<'a, N, R, C>(
-	array: *mut pyo3::ffi::PyObject
+	array: *mut pyo3::ffi::PyObject,
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -129,7 +135,7 @@ where
 /// Same as [`matrix_slice_mut_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn matrix_slice_mut_from_numpy_ptr<'a, N, R, C>(
-	array: *mut pyo3::ffi::PyObject
+	array: *mut pyo3::ffi::PyObject,
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
 	N: nalgebra::Scalar + numpy::TypeNum,
@@ -203,10 +209,7 @@ where
 	}
 
 	// All good.
-	Ok((
-		R::from_usize(input_rows),
-		C::from_usize(input_cols),
-	))
+	Ok((R::from_usize(input_rows), C::from_usize(input_cols)))
 }
 
 unsafe fn check_array_alignment(array: *mut PyArrayObject) -> Result<(), UnalignedArrayError> {
@@ -330,20 +333,20 @@ impl std::fmt::Display for FormatDataType<'_> {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		let Self(dtype) = self;
 		match dtype {
-			numpy::NpyDataType::Bool        => write!(f, "bool"),
-			numpy::NpyDataType::Complex32   => write!(f, "complex32"),
-			numpy::NpyDataType::Complex64   => write!(f, "complex64"),
-			numpy::NpyDataType::Float32     => write!(f, "float32"),
-			numpy::NpyDataType::Float64     => write!(f, "float64"),
-			numpy::NpyDataType::Int8        => write!(f, "int8"),
-			numpy::NpyDataType::Int16       => write!(f, "int16"),
-			numpy::NpyDataType::Int32       => write!(f, "int32"),
-			numpy::NpyDataType::Int64       => write!(f, "int64"),
-			numpy::NpyDataType::PyObject    => write!(f, "object"),
-			numpy::NpyDataType::Uint8       => write!(f, "uint8"),
-			numpy::NpyDataType::Uint16      => write!(f, "uint16"),
-			numpy::NpyDataType::Uint32      => write!(f, "uint32"),
-			numpy::NpyDataType::Uint64      => write!(f, "uint64"),
+			numpy::NpyDataType::Bool => write!(f, "bool"),
+			numpy::NpyDataType::Complex32 => write!(f, "complex32"),
+			numpy::NpyDataType::Complex64 => write!(f, "complex64"),
+			numpy::NpyDataType::Float32 => write!(f, "float32"),
+			numpy::NpyDataType::Float64 => write!(f, "float64"),
+			numpy::NpyDataType::Int8 => write!(f, "int8"),
+			numpy::NpyDataType::Int16 => write!(f, "int16"),
+			numpy::NpyDataType::Int32 => write!(f, "int32"),
+			numpy::NpyDataType::Int64 => write!(f, "int64"),
+			numpy::NpyDataType::PyObject => write!(f, "object"),
+			numpy::NpyDataType::Uint8 => write!(f, "uint8"),
+			numpy::NpyDataType::Uint16 => write!(f, "uint16"),
+			numpy::NpyDataType::Uint32 => write!(f, "uint32"),
+			numpy::NpyDataType::Uint64 => write!(f, "uint64"),
 			numpy::NpyDataType::Unsupported => write!(f, "unsupported"),
 		}
 	}

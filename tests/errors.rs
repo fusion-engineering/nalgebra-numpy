@@ -5,21 +5,21 @@ use nalgebra_numpy::{matrix_from_numpy, Error};
 
 #[test]
 fn wrong_type() {
-	let gil = pyo3::Python::acquire_gil();
-	let py = gil.python();
-	let context = Context::new_with_gil(py);
+	pyo3::Python::with_gil(|py| {
+		let context = Context::new_with_gil(py);
 
-	context.run(python! {
-		float = 3.4
-		int   = 8
-		list  = [1.0, 2.0, 3.0]
+		context.run(python! {
+			float = 3.4
+			int   = 8
+			list  = [1.0, 2.0, 3.0]
+		});
+
+		let get_global = |name| context.globals(py).get_item(name).unwrap();
+
+		assert!(let Err(Error::WrongObjectType(_)) = matrix_from_numpy::<f64, U1, U1>(py, get_global("float")));
+		assert!(let Err(Error::WrongObjectType(_)) = matrix_from_numpy::<i32, U1, U1>(py, get_global("int")));
+		assert!(let Err(Error::WrongObjectType(_)) = matrix_from_numpy::<f64, U1, U3>(py, get_global("list")));
 	});
-
-	let get_global = |name| context.globals(py).get_item(name).unwrap();
-
-	assert!(let Err(Error::WrongObjectType(_)) = matrix_from_numpy::<f64, U1, U1>(py, get_global("float")));
-	assert!(let Err(Error::WrongObjectType(_)) = matrix_from_numpy::<i32, U1, U1>(py, get_global("int")));
-	assert!(let Err(Error::WrongObjectType(_)) = matrix_from_numpy::<f64, U1, U3>(py, get_global("list")));
 }
 
 #[test]

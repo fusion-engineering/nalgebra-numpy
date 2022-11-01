@@ -13,10 +13,10 @@ keywords = ["python", "numpy", "nalgebra", "matrix", "conversion"]
 categories = ["science"]
 
 [dependencies]
-nalgebra = "0.24.1"
-numpy = "0.11"
-pyo3 = "0.11"
+nalgebra = "0.31"
+numpy = "0.17"
+pyo3 = "0.17"
 
 [dev-dependencies]
-inline-python = "0.6.0"
+inline-python = "0.10.0"
 assert2 = "0.3.4"

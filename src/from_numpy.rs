@@ -39,7 +39,7 @@ pub struct WrongObjectTypeError {
 pub struct IncompatibleArrayError {
 	pub expected_shape: Shape,
 	pub actual_shape: Vec<usize>,
-	pub expected_dtype: numpy::DataType,
+	pub expected_dtype: String,
 	pub actual_dtype: String,
 }
 
@@ -58,7 +58,7 @@ pub struct UnalignedArrayError;
 /// The user must ensure that the data is not modified through other pointers or references.
 #[allow(clippy::needless_lifetimes)]
 pub unsafe fn matrix_slice_from_numpy<'a, N, R, C>(
-	_py: pyo3::Python,
+	py: pyo3::Python,
 	input: &'a PyAny,
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
@@ -66,7 +66,7 @@ where
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_from_numpy_ptr(input.as_ptr())
+	matrix_slice_from_numpy_ptr(py, input.as_ptr())
 }
 
 /// Create a mutable nalgebra view from a numpy array.
@@ -80,7 +80,7 @@ where
 /// The user must ensure that no other Rust references to the same data exist.
 #[allow(clippy::needless_lifetimes)]
 pub unsafe fn matrix_slice_mut_from_numpy<'a, N, R, C>(
-	_py: pyo3::Python,
+	py: pyo3::Python,
 	input: &'a PyAny,
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
@@ -88,7 +88,7 @@ where
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	matrix_slice_mut_from_numpy_ptr(input.as_ptr())
+	matrix_slice_mut_from_numpy_ptr(py, input.as_ptr())
 }
 
 /// Create an owning nalgebra matrix from a numpy array.
@@ -98,7 +98,7 @@ where
 /// The array dtype must match the output type exactly.
 /// If desired, you can convert the array to the desired type in Python
 /// using [`numpy.ndarray.astype`](https://numpy.org/devdocs/reference/generated/numpy.ndarray.astype.html).
-pub fn matrix_from_numpy<N, R, C>(py: pyo3::Python, input: &PyAny) -> Result<nalgebra::MatrixMN<N, R, C>, Error>
+pub fn matrix_from_numpy<N, R, C>(py: pyo3::Python, input: &PyAny) -> Result<nalgebra::OMatrix<N, R, C>, Error>
 where
 	N: nalgebra::Scalar + numpy::Element,
 	R: nalgebra::Dim,
@@ -111,6 +111,7 @@ where
 /// Same as [`matrix_slice_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn matrix_slice_from_numpy_ptr<'a, N, R, C>(
+	py: pyo3::Python,
 	array: *mut pyo3::ffi::PyObject,
 ) -> Result<nalgebra::MatrixSlice<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
@@ -118,8 +119,8 @@ where
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	let array = cast_to_py_array(array)?;
-	let shape = check_array_compatible::<N, R, C>(array)?;
+	let array = cast_to_py_array(py, array)?;
+	let shape = check_array_compatible::<N, R, C>(py, array)?;
 	check_array_alignment(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
@@ -132,6 +133,7 @@ where
 /// Same as [`matrix_slice_mut_from_numpy`], but takes a raw [`PyObject`](pyo3::ffi::PyObject) pointer.
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn matrix_slice_mut_from_numpy_ptr<'a, N, R, C>(
+	py: pyo3::Python,
 	array: *mut pyo3::ffi::PyObject,
 ) -> Result<nalgebra::MatrixSliceMut<'a, N, R, C, Dynamic, Dynamic>, Error>
 where
@@ -139,8 +141,8 @@ where
 	R: nalgebra::Dim,
 	C: nalgebra::Dim,
 {
-	let array = cast_to_py_array(array)?;
-	let shape = check_array_compatible::<N, R, C>(array)?;
+	let array = cast_to_py_array(py, array)?;
+	let shape = check_array_compatible::<N, R, C>(py, array)?;
 	check_array_alignment(array)?;
 
 	let row_stride = Dynamic::new(*(*array).strides.add(0) as usize / std::mem::size_of::<N>());
@@ -151,8 +153,8 @@ where
 }
 
 /// Check if an object is numpy array and cast the pointer.
-unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyArrayObject, WrongObjectTypeError> {
-	if npyffi::array::PyArray_Check(object) == 1 {
+unsafe fn cast_to_py_array(py: pyo3::Python, object: *mut pyo3::ffi::PyObject) -> Result<*mut PyArrayObject, WrongObjectTypeError> {
+	if npyffi::array::PyArray_Check(py, object) == 1 {
 		Ok(&mut *(object as *mut npyffi::objects::PyArrayObject))
 	} else {
 		Err(WrongObjectTypeError {
@@ -162,7 +164,7 @@ unsafe fn cast_to_py_array(object: *mut pyo3::ffi::PyObject) -> Result<*mut PyAr
 }
 
 /// Check if a numpy array is compatible and return the runtime shape.
-unsafe fn check_array_compatible<N, R, C>(array: *mut PyArrayObject) -> Result<(R, C), IncompatibleArrayError>
+unsafe fn check_array_compatible<N, R, C>(py: pyo3::Python, array: *mut PyArrayObject) -> Result<(R, C), IncompatibleArrayError>
 where
 	N: numpy::Element,
 	R: nalgebra::Dim,
@@ -177,7 +179,7 @@ where
 		IncompatibleArrayError {
 			expected_shape,
 			actual_shape: shape(array),
-			expected_dtype: N::DATA_TYPE,
+			expected_dtype: N::get_dtype(py).to_string(),
 			actual_dtype: data_type_string(array),
 		}
 	};
@@ -201,7 +203,7 @@ where
 	}
 
 	// Check the data type of the input array.
-	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums((*(*array).descr).type_num, N::ffi_dtype() as u32 as i32) != 1 {
+	if npyffi::array::PY_ARRAY_API.PyArray_EquivTypenums(py, (*(*array).descr).type_num, N::get_dtype(py).num()) != 1 {
 		return Err(make_error());
 	}
 
@@ -309,10 +311,7 @@ impl std::fmt::Display for IncompatibleArrayError {
 		write!(
 			f,
 			"incompatible array: expected ndarray(shape={}, dtype='{}'), found ndarray(shape={:?}, dtype={:?})",
-			self.expected_shape,
-			FormatDataType(&self.expected_dtype),
-			self.actual_shape,
-			self.actual_dtype,
+			self.expected_shape, &self.expected_dtype, self.actual_shape, self.actual_dtype,
 		)
 	}
 }
@@ -320,31 +319,6 @@ impl std::fmt::Display for IncompatibleArrayError {
 impl std::fmt::Display for UnalignedArrayError {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		write!(f, "the input array is not properly aligned for this platform")
-	}
-}
-
-/// Helper to format [`numpy::DataType`] more consistently.
-struct FormatDataType<'a>(&'a numpy::DataType);
-
-impl std::fmt::Display for FormatDataType<'_> {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		let Self(dtype) = self;
-		match dtype {
-			numpy::DataType::Bool => write!(f, "bool"),
-			numpy::DataType::Complex32 => write!(f, "complex32"),
-			numpy::DataType::Complex64 => write!(f, "complex64"),
-			numpy::DataType::Float32 => write!(f, "float32"),
-			numpy::DataType::Float64 => write!(f, "float64"),
-			numpy::DataType::Int8 => write!(f, "int8"),
-			numpy::DataType::Int16 => write!(f, "int16"),
-			numpy::DataType::Int32 => write!(f, "int32"),
-			numpy::DataType::Int64 => write!(f, "int64"),
-			numpy::DataType::Object => write!(f, "object"),
-			numpy::DataType::Uint8 => write!(f, "uint8"),
-			numpy::DataType::Uint16 => write!(f, "uint16"),
-			numpy::DataType::Uint32 => write!(f, "uint32"),
-			numpy::DataType::Uint64 => write!(f, "uint64"),
-		}
 	}
 }
 

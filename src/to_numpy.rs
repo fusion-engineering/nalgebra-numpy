@@ -13,11 +13,12 @@ where
 	C: nalgebra::Dim,
 	S: nalgebra::storage::Storage<N, R, C>,
 {
-	let array = PyArray::new(py, (matrix.nrows(), matrix.ncols()), false);
+	// TODO: safety!?
+	let array = unsafe { PyArray::new(py, (matrix.nrows(), matrix.ncols()), false) };
 	for r in 0..matrix.nrows() {
 		for c in 0..matrix.ncols() {
 			unsafe {
-				*array.uget_mut((r, c)) = matrix[(r, c)].inlined_clone();
+				*array.uget_mut((r, c)) = matrix[(r, c)].clone();
 			}
 		}
 	}
